@@ -32,11 +32,11 @@ Fig moves all the configuration required to orchestra Docker into a simple clear
 
 Let's explore Fig by example and let's make it challenging.
 
-I want a project with TWO databases, `Postgres 9.3` and `ElasticSearch 1.1`. I want `Redis 2.8.3` for a caching and I'll be running my main site through a python powered Flask app.
+I want a project with TWO databases, `Postgres 9.1` and `ElasticSearch 1.1`. I want `Redis 2.8.3` for a caching and I'll be running my main site through a python powered Flask app.
 
 Before we set this up in Fig, imagine setting this up locally. How long would it take?
 
-Thought experiment over, let's dive into an example. All code featured is available in this [GitHub repo]().
+Thought experiment over, let's dive into an example. All code featured is available in this [GitHub repo](https://github.com/TrackMaven/using-fig).
 
 ### An example
 Let's start with the `fig.yml`.
@@ -75,17 +75,19 @@ In less then 30 lines of yaml, I've declared our stack.
 
 With [Fig installed](http://orchardup.github.io/fig/install.html) we can start our stack by running `fig up`.
 
-!()[https://camo.githubusercontent.com/5054a4e9febb95b59650701e39ad5196e3f0200e/68747470733a2f2f6f72636861726475702e636f6d2f7374617469632f696d616765732f6669672d6578616d706c652d6c617267652e676966]
+<iframe src="https://gfycat.com/ifr/SlightZestyGlassfrog" frameborder="0" scrolling="no" width="1310" height="686" ></iframe>
+
+Let's break down what our simple command above did into 2 stages.
 
 #### Building stage.
 
 ```
-$ docker build -t demo_web -rm=True web
-$ docker pull dockerfile/elasticsearch
 $ docker pull orchardup/postgres
 $ docker pull trackmaven/redis
+$ docker pull dockerfile/elasticsearch
+$ docker build -t demo_web -rm=True web
 ```
-**Equivalent docker commands**
+**Equivalent docker commands preformed by Fig**
 
 Fig goes through each service, then if needed, builds an image.
 
@@ -104,7 +106,7 @@ ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 ```
 
-In our example project, our [Dockerfile](TODO:LINK) builds on top of an Ubuntu 13.04 base. It ensures Python and pip are installed before installing our project specific python packages from requirements.txt.
+In our example project, our [Dockerfile](https://github.com/TrackMaven/using-fig/blob/master/web/Dockerfile) builds on top of an Ubuntu 13.04 base. It ensures Python and pip are installed before installing our project specific python packages from requirements.txt.
 
 Alternatively, you can point services towards a pre-built image.
 This can exist locally and be referenced by a tag or a partial image ID or remotely on Docker's [public registry](https://registry.hub.docker.com/).
@@ -120,13 +122,13 @@ $ docker run --rm --name demo_db_1 -p "5432:5432" -e "POSTGRESQL_DB:test_db" orc
 $ docker run --rm --name demo_redis_1 -p "6379:6379" trackmaven/redis
 $ docker run --rm --name demo_web_1 -v "web:/code" -p "5000:5000" --link es:demo_es_1 --link db:demo_db_1 --link redis:demo_redis_1 demo_web python app.py
 ```
-**Equivalent docker commands**
+**Equivalent docker commands preformed by Fig**
 
 Each service has a variety of run time options, including...
 
 * `volumes`: Allows you to share folders between your host machine and the services' docker containers. In our example, the `web` folder is shared, so any code changes to the contained files are immediately updated on the running container.
 * `ports`: Exposes ports between the host (you) and the container (service).
-* `environment`: Allows you to set environment variables for containers. In our example, this allows us to configure the name of our database, [due to a clever run script](TODO:LINK).
+* `environment`: Allows you to set environment variables for containers. In our example, this allows us to configure the name of our database, [due to a clever run script](https://github.com/orchardup/docker-postgresql/blob/master/run).
 * `links`: [Allows inter-service communication](http://orchardup.github.io/fig/env.html). In our example, `web` needs to know the ip and ports for the `redis`, `db` and `es` services. Fig ensures those boot up first, then injects in a set of environment variables to `web` that includes the ip address and various ports of the linked services.
 
 To stop the running services, you kill them with `Ctrl+C` or run `fig stop` in another terminal window.
@@ -138,8 +140,6 @@ After a successful build of a service, Fig won't attempt to rebuild that service
 Fig also gives you the ability to run one off commands in services using `fig run [SERVICE] [COMMAND]`. For example, `fig run web python`.
 
 ### That's it!
-
-Fig help
 
 For more about what Fig can do, I'd suggest checking out the
 [documentation](http://orchardup.github.io/fig/index.html).
