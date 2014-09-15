@@ -1,6 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
 
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <button type="button" class="close pull-right" data-dismiss="alert">
+      <span aria-hidden="true">-</span><span class="sr-only">Close</span>
+    </button>
+    <h3 class="panel-title">Welcome to the TrackMaven Engine Room</h3>
+  </div>
+  <div class="panel-body">
+    <p class="well-content">Here at the Engine Room, we are working hard to keep TrackMaven running, and we want to share our experiences. Hope you enjoy! If you like what you read here, and find yourself wanting to be mavenly, we are looking for the next maven to join our team, apply <a href="http://trackmaven.theresumator.com/apply/EzkTn4/Software-Maven.html">here</a>.</p>
+  </div>
+</div>
+
 {% if articles %}
 {% for article in (articles_page.object_list if articles_page else articles) %}
 <div class="row">
@@ -44,5 +56,4 @@
 </ul>
 </div>
 {% endif %}
-
 {% endblock %}
