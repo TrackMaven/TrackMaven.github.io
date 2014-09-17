@@ -1,0 +1,263 @@
+// Core variables and mixins
+@import "bootstrap/variables";
+@import "bootstrap/mixins";
+
+// Reset and dependencies
+@import "bootstrap/normalize";
+
+// Core CSS
+@import "bootstrap/scaffolding";
+@import "bootstrap/type";
+@import "bootstrap/code";
+@import "bootstrap/grid";
+@import "bootstrap/forms";
+
+// Components
+@import "bootstrap/navs";
+@import "bootstrap/navbar";
+@import "bootstrap/wells";
+@import "bootstrap/panels";
+
+// Utility classes
+@import "bootstrap/utilities";
+@import "bootstrap/responsive-utilities";
+
+
+/*
+ * Globals
+ */
+
+$background-light: #fffefb;
+$default-font-color: #6c6c6c;
+$default-font: "proxima-nova", "sans-serif";
+$footer-height: 30px;
+$primary-gray: #373636;
+$primary-turqoise: #9cd5cb;
+
+
+html,
+body {
+  height: 100%;
+  font-size: 17px;
+  background: $background-light;
+}
+
+/* Wrapper for page content to push down footer */
+.wrap {
+  min-height: 100%;
+  height: auto;
+  /* Negative indent footer by its height */
+  margin: 0 auto -$footer-height;
+  /* Pad bottom by footer height */
+  padding: 0 0 $footer-height;
+}
+
+/*
+ * Footer
+ */
+
+.blog-footer {
+    padding: $footer-height/2 0;
+    color: #999;
+    text-align: center;
+    background-color: #f9f9f9;
+    border-top: 1px solid #e5e5e5;
+    p:last-child {
+        margin-bottom: 0;
+    }
+}
+
+body {
+  background: $background-light;
+  color: $default-font-color;
+  padding: 0;
+  margin: 0;
+  font-family: $default-font;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  position: relative;
+  cursor: default;
+  min-width: 1020px;
+}
+
+/*
+ * Override Bootstrap's default container.
+ */
+
+@media (min-width: 1200px) {
+  .container {
+    width: 970px;
+  }
+}
+
+
+/*
+ * Masthead for nav
+ */
+ .logo {
+  position: absolute;
+  top: 21px;
+ }
+
+.blog-masthead {
+    background: white url("../images/web-tile.png") 0 0 repeat;
+    border-bottom: 1px solid #dbdbdb;
+    margin-bottom: 20px;
+    height: 105px;
+    padding: 20px 0;
+}
+
+
+
+/*
+ * Blog name and description
+ */
+
+.blog-header {
+    padding-top: 20px;
+    padding-bottom: 20px;
+} 
+
+.blog-title {
+    margin-top: 15px;
+    margin-bottom: 0;
+    a {
+      font-size: 30px;
+      font-weight: 600;
+      color: #373636;
+      &:hover {
+        color: #dc795e;
+        text-decoration: none;
+      }
+    }
+}
+
+.blog-description {
+    font-size: 20px;
+    color: #999;
+}
+
+/*
+ * Main column and sidebar layout
+ */
+
+.blog-main {
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+/* Sidebar modules for boxing content */
+.sidebar-module {
+    padding: 15px;
+    margin: 0 -15px 15px;
+}
+
+.sidebar-module-inset {
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    p,
+    ul,
+    ol {
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+
+
+/* Pagination */
+.pager {
+    margin-bottom: 60px;
+    text-align: left;
+    > li > a {
+        width: 140px;
+        padding: 10px 20px;
+        text-align: center;
+        border-radius: 30px;
+    }
+}
+
+/*
+ * Blog posts
+ */
+
+.blog-post {
+    margin-bottom: 60px;
+    max-width: 570px;
+}
+.blog-post-title {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 40px;
+  font-weight: 800;
+  color: #373636;
+  font-family: "proxima-nova-alt", "proxima-nova";
+  a {
+    color: #373636;
+    &:hover {
+      color: #9cd5cb;
+      text-decoration: none;
+    }
+  }
+}
+
+code {
+  color: #373636;
+}
+
+.blog-post-meta {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    color: #999;
+  a {
+    color: #9cd5cb;  
+    &:hover {
+      color:#9cd5cb;
+      text-decoration: none;
+    }
+  }
+}
+.blog-post-content {
+    line-height: 1.45;
+}
+.well-content {
+    line-height: 1.45;
+}
+.side-image {
+  border-radius: 100%;
+  height: 150px;
+  width: 150px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.cameron-maske-avatar {
+  background-image: url('http://trackmaven.com/wp-content/uploads/2014/01/cam_large.png');
+}
+
+.jonathan-evans-avatar {
+  background-image: url('http://trackmaven.com/wp-content/uploads/2014/01/jon_large.png');
+}
+
+.matt-camilli-avatar {
+  background-image: url('http://trackmaven.com/wp-content/uploads/2014/01/matt_large.png');
+}
+
+.fred-battista-avatar {
+  background-image: url('http://trackmaven.com/wp-content/uploads/2014/04/fred_large.png');
+}
+
+.john-young-avatar {
+  background-image: url('http://trackmaven.com/wp-content/uploads/2014/04/john_large.png');
+}
+
+.fletcher-heisler-avatar {
+  background-image: url('http://trackmaven.com/wp-content/uploads/2014/01/fletcher_large.png');
+}
+
+.josh-finnie-avatar {
+  background-image: url('http://trackmaven.com/wp-content/uploads/2014/04/joshf_large1.png');
+}

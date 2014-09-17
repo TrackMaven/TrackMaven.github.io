@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="{{ DEFAULT_LANG }}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="{{ AUTHOR }}">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+
+    <title>
+      {% block title %}{{ SITENAME }}{% endblock %} - TrackMaven
+    </title>
+    {% if DEBUG %}
+      <script src="http://localdocker:35729/livereload.js"></script>
+    {% endif %}
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <link href="{{ SITEURL }}/theme/css/main.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-3">
+              <img class="logo" src="{{ SITEURL }}/theme/images/logo.png"/ >
+            </div>
+            <div class="col-md-9">
+              <h1 class="blog-title">
+                <a href="{{ SITEURL }}/">The Engine Room</a>
+              </h1>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; 2014 - TrackMaven</p>
+    </div>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

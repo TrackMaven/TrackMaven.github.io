@@ -1,0 +1,11 @@
+.vfenv
+*.pyc
+.venv
+output
+node_modules
+
+.floo*
+.sass-cache*
+pelican.pid
+srv.pid
+.ropeproject

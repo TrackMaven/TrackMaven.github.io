@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="panel panel-default intro-panel">
+  <div class="panel-heading">
+    <button type="button" class="close pull-right" onclick="clickClose()">
+      <span aria-hidden="true">-</span><span class="sr-only">Close</span>
+    </button>
+    <h3 class="panel-title">Welcome to the TrackMaven Engine Room</h3>
+  </div>
+  <div class="panel-body">
+    <p class="well-content">Here at the Engine Room, we are working hard to keep TrackMaven running, and we want to share our experiences. Hope you enjoy! If you like what you read here, and find yourself wanting to be mavenly, we are looking for the next maven to join our team, apply <a href="http://trackmaven.theresumator.com/apply/EzkTn4/Software-Maven.html">here</a>.</p>
+  </div>
+</div>
+
+{% if articles %}
+{% for article in (articles_page.object_list if articles_page else articles) %}
+<div class="row">
+  <div class="col-md-3">
+
+    <div class="side-image {{ article.avatar }}-avatar"> </div>
+    <p class="blog-post-meta">{{ article.locale_date }}<br>By <a href="{{ SITEURL }}/{{ article.author.url }}">{{ article.author }}</a></p>
+  </div>
+  <div class="col-md-9">
+    <div class="blog-post">
+      <h2 class="blog-post-title">
+      	<a href="{{ SITEURL }}/{{ article.url }}">
+      	{{ article.title }}
+      	</a>
+      </h2>
+      <div class="blog-post-content">{{ article.content|truncate(400) }} <a href="{{ SITEURL }}/{{ article.url }}">Read more.</a></div>
+    </div>
+  </div>
+</div>
+<!-- /.blog-post -->
+{% endfor %}
+{%endif%}
+
+{% if articles_page and articles_paginator.num_pages > 1 %}
+<div class="pagination">
+<ul>
+  {% if articles_page.has_previous() %}
+    {% set num = articles_page.previous_page_number() %}
+    <li class="prev"><a href="{{ SITEURL }}/{{ page_name }}{{ num if num > 1 else '' }}.html">&larr; Previous</a></li>
+  {% else %}
+    <li class="prev disabled"><a href="#">&larr; Previous</a></li>
+  {% endif %}
+  {% for num in range( 1, 1 + articles_paginator.num_pages ) %}
+    <li class="{{ 'active' if num == articles_page.number else '' }}"><a href="{{ SITEURL }}/{{ page_name }}{{ num if num > 1 else '' }}.html">{{ num }}</a></li>
+  {% endfor %}
+  {% if articles_page.has_next() %}
+    <li class="next"><a href="{{ SITEURL }}/{{ page_name }}{{ articles_page.next_page_number() }}.html">Next &rarr;</a></li>
+  {% else %}
+    <li class="next disabled"><a href="#">&rarr; Next</a></li>
+  {% endif %}
+</ul>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+  function clickClose() {
+    console.log("closing");
+    $(".intro-panel").addClass("hidden");
+  };
+{% endblock %}
