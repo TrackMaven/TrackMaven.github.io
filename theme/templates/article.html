@@ -7,8 +7,11 @@
   <div class="blog-post-content">{{ article.content }}</div>
   {% if article.tags %}<p class="blog-post-meta">Tags: {% for tag in article.tags %}<a href="/{{ tag.url }}">{{ tag }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
   <div class="well">
-    <div class="row">
+    <div class="row text-center col-md-4 col-md-offset-4">
       <div class="side-image {{ article.avatar }}-avatar col-sm-3"> </div>
+      <h3>{{ article.author }}</h3>
+    </div>
+    <div>
       <div class="col-sm-9">{% include "bios/"+article.avatar+".html"%}</div>
     </div>
   </div>
