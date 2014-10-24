@@ -146,13 +146,14 @@ FULLPATH=$BUCKET$FILE
 EXISTS=false
 WAIT_TIME_IN_SECONDS=1800
 RETRYS=0
+LOCALPATH=yourlocalpathhere/$FILE
 
 echo Checking for $FULLPATH
 
 get_file_from_s3 ()
 {
   #echo getting $FULLPATH
-  s3cmd get $FULLPATH
+  s3cmd get $FULLPATH $LOCALPATH
 }
 
 check_if_backup_complete ()
@@ -180,7 +181,7 @@ You can run this script as any user.
 
 
 
-#### Keep only n backups on S3
+#### Keep only 3 backups on S3
 
 
 
@@ -209,6 +210,29 @@ done
 #### Keep only n backups on the remote machine
 
 Then you need to delete the files on the local machine that you don't need anymore:
+
+```
+#!/bin/bash
+
+FILES=()
+FILES=( /your_backup_location/* )
+
+#echo $FILES
+
+SORTEDFILES=( $(
+    for el in "${FILES[@]}"
+    do
+        echo "$el"
+    done | sort -Vr ) )
+
+for (( i = 0 ; i < ${#SORTEDFILES[@]} ; i++ )) do
+  if [ $i -gt 2 ]; then
+    #echo Removing ${SORTEDFILES[$i]}
+    s3cmd del ${SORTEDFILES[$i]}
+  fi
+done
+```
+
 
 
 
