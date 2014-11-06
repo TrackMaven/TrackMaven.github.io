@@ -1,0 +1,8 @@
+builder:
+  build: .
+  command: "gulp --require coffee-script/register"
+  ports:
+    - "8080:8080"
+    - "35729:35729"
+  volumes:
+    - .:/code
