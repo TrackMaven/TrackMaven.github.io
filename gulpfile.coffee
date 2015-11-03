@@ -1,13 +1,15 @@
 gulp = require "gulp"
 gutil = require "gulp-util"
 
-sass = require "gulp-ruby-sass"
-plumber = require "gulp-plumber"
 autoprefixer = require "gulp-autoprefixer"
-minifyCSS = require "gulp-minify-css"
-run = require "gulp-shell"
-
 connect = require "gulp-connect"
+imagemin = require "gulp-imagemin"
+imageResize = require "gulp-image-resize"
+minifyCSS = require "gulp-minify-css"
+plumber = require "gulp-plumber"
+pngquant = require "imagemin-pngquant"
+run = require "gulp-shell"
+sass = require "gulp-ruby-sass"
 
 # Serve the generate html on localhost/localdocker:8080
 gulp.task "connect", ->
@@ -28,17 +30,38 @@ gulp.task "scss", ->
 
 # Rebuild the html.
 gulp.task "html", ->
-    gulp.src("")
-        .pipe(run("rm -fr output"))
+    gulp.src("output")
+        .pipe(run("rm -rf output/*"))
         .pipe(run("make html"))
-        .pipe(run("cp -r images/ output/images/"))
         .pipe(connect.reload())
+
+# Optimises the images for web.
+gulp.task "img-opt", ->
+    gulp.src("images/**/*")
+        .pipe(imagemin({
+            progressive: true
+        }))
+        .pipe(gulp.dest("output/images/"))
+
+# Optimises the images for web.
+gulp.task "headshots", ->
+    gulp.src("headshots/*")
+        .pipe(imageResize({
+            width : 200,
+            height : 200,
+            crop : true,
+            upscale : false
+        }))
+        .pipe(imagemin({
+            progressive: true
+        }))
+        .pipe(gulp.dest("output/images/headshots/"))
 
 # Watch for any changes and run the required tasks.
 gulp.task "watch", ->
     gulp.watch("theme/styles/**/*.scss", ["scss"])
     gulp.watch("theme/static/css/**/*.css", ["html"])
     gulp.watch("theme/templates/**/*.html", ["html"])
-    gulp.watch("content/**/*.md", ["html"])
+    gulp.watch("content/**/*.md", ["html", "img-opt"])
 
-gulp.task("default", ["html", "scss", "watch", "connect"])
+gulp.task("default", ["html", "scss", "img-opt", "watch", "connect"])

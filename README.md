@@ -32,6 +32,10 @@ Avatar: <AVATAR (AUTHOR SLUG)>
 
 Please note that the common practice has been to create tags in lowercase and the `Avatar:` is the Author's name "slugified" (i.e. Maven the Corgi becomes maven-the-corgi).
 
+### Adding your headshot
+
+To get your avatar applied to the site, you will need to update the SCSS [here](https://github.com/TrackMaven/TrackMaven.github.io/blob/source/theme/styles/_style.scss#L512). Then you will need to put your headshot in the `headshots` folder. Once that is complete, you should be able to run the `gulp headshots` command. **Reminder** To run this on Docker, the command is `docker-compose run builder gulp headshots`.
+
 ## Publishing
 
 Once a new article is ready, simply run the command `fab push` to publish the article to GitHub.
