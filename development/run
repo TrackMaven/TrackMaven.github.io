@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+export HOME=/home/builder
 npm install .
 
 exec gulp --require coffee-script/register

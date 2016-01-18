@@ -24,4 +24,10 @@ RUN chmod +x /usr/local/bin/run
 
 WORKDIR /code
 
+RUN useradd builder
+RUN mkdir /home/builder
+RUN chown -R builder /home/builder
+
+USER builder
+
 CMD ["/usr/local/bin/run"]
