@@ -1,27 +1,30 @@
-FROM node
+FROM node:4.3
 MAINTAINER Josh Finnie "josh.finnie@trackmaven.com"
+
 RUN apt-get -y update
 
-# Install git.
-RUN apt-get -y install git
+# Install git, python & ruby.
+RUN apt-get -y install git python python-dev python-pip
 
-# Install Ruby
-RUN apt-get install -y ruby
+# Update NPM
+RUN npm install -g npm@3.8.2
 
 # Install Gulp
-RUN npm install -g gulp@3.8.11 > /dev/null 2>&1
+RUN npm install -g gulp@3.9.1
 
-# Install SASS
-RUN gem install sass -v 3.4.13
+# Install NPM packages
+ADD package.json /tmp/package.json
+RUN cd /tmp && npm install
+RUN mkdir -p /code && cp -a /tmp/node_modules /code
 
-# Install Python
-RUN apt-get install -y python python-dev python-pip
-ADD requirements.txt /code/requirements.txt
-RUN pip install -r /code/requirements.txt
+# Install Python packages
+ADD requirements.txt /tmp/requirements.txt
+RUN cd /tmp && pip install -r requirements.txt
 
-ADD development/run /usr/local/bin/run
-RUN chmod +x /usr/local/bin/run
+ADD .babelrc /code/.babelrc
+ADD gulpfile.js /code/gulpfile.js
+ADD gulpfile.es6 /code/gulpfile.es6
 
 WORKDIR /code
 
-CMD ["/usr/local/bin/run"]
+CMD ["gulp"]

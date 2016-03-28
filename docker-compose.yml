@@ -4,4 +4,4 @@ builder:
     - "8080:8080"
     - "35729:35729"
   volumes:
-    - .:/code
+    - ./app:/code/app

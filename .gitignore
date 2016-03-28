@@ -2,7 +2,6 @@
 .vfenv
 *.pyc
 .venv
-output
 node_modules
 
 .floo*
@@ -11,4 +10,6 @@ pelican.pid
 srv.pid
 .ropeproject
 engineroom/
-cache/
+
+app/cache/
+app/output

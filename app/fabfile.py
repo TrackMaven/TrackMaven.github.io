@@ -13,10 +13,10 @@ def clean():
 
 
 def build():
-    local('pelican -s pelicanconf.py')
-    local("echo 'engineroom.trackmaven.com' > {}/CNAME".format(
+    local('pelican -s app/pelicanconf.py')
+    local("echo 'engineroom.trackmaven.com' > app/{}/CNAME".format(
         env.deploy_path))
-    local("cp -r images/ output/images/")
+    local("cp -r app/images/ app/output/images/")
 
 
 def rebuild():
@@ -24,29 +24,16 @@ def rebuild():
     build()
 
 
-def regenerate():
-    local('pelican -r -s pelicanconf.py')
-
-
-def serve():
-    local('cd {deploy_path} && python -m SimpleHTTPServer'.format(**env))
-
-
-def reserve():
-    build()
-    serve()
-
-
 def prodbuild():
     clean()
-    local('pelican -s publishconf.py')
-    local("echo 'engineroom.trackmaven.com' > {}/CNAME".format(
+    local('pelican -s app/publishconf.py')
+    local("echo 'engineroom.trackmaven.com' > app/{}/CNAME".format(
         env.deploy_path))
-    local("cp -r images/ output/images/")
+    local("cp -r app/images/ app/output/images/")
 
 
 def push():
     prodbuild()
     local('git push origin source:source')
-    local('ghp-import {}'.format(env.deploy_path))
+    local('ghp-import app/{}'.format(env.deploy_path))
     local('git push origin gh-pages:master --force')
