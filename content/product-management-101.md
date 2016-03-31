@@ -1,5 +1,5 @@
 Title: Don’t Answer the User’s Question
-Date: 2016-3-29
+Date: 2016-3-31
 Category: product-management
 Tags: how-to, ux, product, research
 Slug: product-management-101
