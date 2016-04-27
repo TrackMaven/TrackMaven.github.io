@@ -1,5 +1,5 @@
 Title: Getting Started with Django REST Framework (DRF) and AngularJS (Part 3)
-Date: 2016-03-30
+Date: 2016-04-27
 Category: Development
 Tags: django, django rest framework, angularjs
 Slug: getting-started-drf-angularjs-part-3
@@ -262,10 +262,8 @@ drf-sample$ curl -g localhost:8000/employees/
 [{"store":1,"number":"026546","first_name":"John","last_name":"doe","hired_date":"2015-12-04T00:00:00Z"}]
 ```
 
-Great, the API works!  
-
-
+Great, the API works!  The above commands only perform `GET` requests, but our `ViewSet` definitions are defined in a way to allow all operations for anyone accessing our server.  Permission filters can be added the `ViewSets` to allow only certain users to the server or specify only specific operations, but that will be covered in another post.
 
 ## Looking Forward
 
-A lot was covered in this post so this is a great point to end on.  Look for the next post soon, covering API endpoint creation, including views, serializers, and URL routing for the `Retail` application.
+We got an API up and working for the server!  The next post will cover the basics of AngularJS and how to connect the client code to the server.
