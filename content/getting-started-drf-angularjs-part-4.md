@@ -99,12 +99,13 @@ drf-sample/client$ npm install
 {
   "dependencies": {
     "angular": "^1.5.7",
-    "angular-ui-router": "^0.3.1"
+    "angular-ui-router": "^0.3.1",
+    "angular-bootstrap": "^1.3.3"
   }
 }
 ```
 
-*Note:* There are a number of fields possible in `bower.json` left out of this example.  The [bower.json documentation](https://github.com/bower/spec/blob/master/json.md) does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download `angular` and `angular-ui-router`.
+*Note:* There are a number of fields possible in `bower.json` left out of this example.  The [bower.json documentation](https://github.com/bower/spec/blob/master/json.md) does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download `angular`, `angular-ui-router`, and `angular-bootstrap`.
 
 ----
 
