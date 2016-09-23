@@ -168,16 +168,40 @@ components/
 
 Angular modules can typically be is split into three main parts: controllers, services, and templates.  Templates contain the HTML code shown to the user.  Controllers are JS files that define dynamic content displayed by the templates through `$scope` variables.  Services are helper JS files typically used to define classes, contact external APIs, etc.
 
+### Full Application Definition
+
+Since Angular applications are just a combination of modules, there are a few modules that we need to define.  First, the `retail` module will hold all controller, service, and template code that involves the Retail API.  Then we need to define the main application module that uses `retail`.
+
+Alter `app.js` with the following:
+
+----
+
+*app.js*
+```javascript
+'use strict';
+
+var retail = angular.module("retail", []);
+
+angular
+    .module('SampleApplication', [
+        'appRoutes',
+        'retail'
+    ]);
+```
+
+----
+
+Here we created an angular module named `retail`.  Nothing is defined as part of this module yet, but having the module available will come in handy later.  Second, the `SampleApplication` module is created.  This will act as the main module that brings together all other modules within the application.  `appRoutes` and `retail` are dependencies for `SampleApplication`.  Don't worry about `appRoutes` for now, we will get to that later.  Let's start on the `retail` module.
+
 ### Controllers and Templates
 
-A good place to start is with the controller and template files since they are so directly connected.  Modify the Retail controller and template files with the following.
+As a first pass, the `retail` module will have two parts: a controller and a template.  This is a good place to start since they are so directly connected.  Modify the `retail` controller and template files with the following:
 
 ----
 
 *retail.control.js*
 ```javascript
-angular
-    .module('retail', [])
+retail
     .controller('RetailController', ['$scope', function($scope) {
         $scope.message = "Hello World";
 }]);
@@ -194,9 +218,9 @@ angular
 
 ----
 
-So, what is going on here?  The controller is defined as part of the "retail" module and given the name "RetailController".  `$scope` is injected into the controller so the controller may use it.  Think of `$scope` as a link that connects templates to controllers.  Anything defined on `$scope` in the controller can be used by cooresponding templates and vice versa.  `$scope.message` is defined within the controller.  Any template using "RetailController" can view and alter the `message` variable.
+So, what is going on here?  By using `retail.controller` we are stating that this controller is defined as part of the `retail` module from `app.js`.  The controller is given the name "RetailController".  `$scope` is injected into the controller so the controller has access to it.  Think of `$scope` as a link that connects templates to controllers.  Any vairables defined on `$scope` in the controller can be used by cooresponding templates and vice versa.  The `$scope.message` variable is defined within the controller.  Any template using "RetailController" can view and alter the `message` variable.
 
-The template defines a `div` with the `ng-controller` directive pointing to "RetailController".  You can read more about directives [here](https://docs.angularjs.org/guide/directive).  This provides the template use of "RetailController" and the `message` variable.  By placing `message` in `{{ }}` tags, the template displays text defined by the variable instead of a static string.  Whenever the `$scope.message` variable changes in the controller it will render on the template automatically thanks to variable binding!
+The template defines a `div` with the `ng-controller` directive pointing to "RetailController".  You can read more about directives [here](https://docs.angularjs.org/guide/directive).  This provides the template use of "RetailController" and the `message` variable.  By placing `message` in `{{ }}` tags, the template displays text stored by the variable instead of a static string.  Whenever the `$scope.message` variable changes in the controller it will render on the template automatically thanks to variable binding!
 
 ----
 
@@ -204,7 +228,7 @@ The template defines a `div` with the `ng-controller` directive pointing to "Ret
 
 ----
 
-Great!  We have our basic Retail module defined, but we still need a way for the user to access it.  
+Great!  We have our basic `retail` control module defined, but we still need a way for the user to access it.  
 
 
 ### Application Routing
@@ -233,31 +257,9 @@ angular
 
 Here, another module is defined: `appRoutes` .  This module has a dependency on `ui.router` so that we can use [`$stateProvider`](https://github.com/angular-ui/ui-router/wiki) to alter application states.
 
-One state is defined in `appRoutes`: "retail".  When users visit the base URL for our application, `/`, we want them to see the retail module using the retail template and controller.  
+One state is defined in `appRoutes`: "retail".  When users visit the base URL for our application, `/`, we want them to see the Retail control module using the retail template and controller.  
 
 Further, `appRoutes` states that users should be redirected to `/` when they visit a URL that has not explicitly defined.  
-
-### Full Application Definition
-
-So far, we have created two modules for the Angular application, but nothing is using them.  We need to define one more module that brings everything together.  Alter `app.js` with the following:
-
-----
-
-*app.js*
-```javascript
-'use strict';
-
-angular
-    .module('SampleApplication', [
-        'appRoutes',
-        'retail'
-    ]);
-```
-
-----
-
-`SampleApplication` is the main module that brings together the other modules we created so far.  We added `appRoutes` and `retail` as dependencies for `SampleApplication` and that's all we need to do!  Now there is only one more step to get our Angular application served to the user!
-
 
 <a name="results"></a>
 ## The First Page
