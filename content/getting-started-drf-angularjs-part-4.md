@@ -65,7 +65,7 @@ This structure contains a a lot, so it is worthwhile to go over the main functio
 - `public/appRoutes.js` - Defines how a user can reach each application module
 - `public/components/` - Hold the source code for application module
 
-To setup the project, we need to define and install our project depdencies.  First, configure `package.json` to download `express` for our Node server and `bower` so we can install our Angular dependencies.  
+To setup the project, we need to define and install our project dependencies.  First, configure `package.json` to download `express` for our Node server and `bower` so we can install our Angular dependencies.
 
 ----
 
