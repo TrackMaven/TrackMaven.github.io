@@ -167,7 +167,7 @@ components/
         └── retail.template
 ```
 
-Angular modules can typically be is split into three main parts: controllers, services, and templates.  Templates contain the HTML code shown to the user.  Controllers are JS files that define dynamic content displayed by the templates through `$scope` variables.  Services are helper JS files typically used to define classes, contact external APIs, etc.
+Angular modules can typically be split into three main parts: controllers, services, and templates.  Templates contain the HTML code shown to the user.  Controllers are JS files that define dynamic content displayed by the templates through `$scope` variables.  Services are helper JS files typically used to define classes, contact external APIs, etc.
 
 ### Full Application Definition
 
