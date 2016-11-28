@@ -34,7 +34,7 @@ This guide uses [AngularJS](https://github.com/angular/angular.js) `1.5.7` and [
 ## A Recap and an Introduction to AngularJS
 Last we met, we finished the API for the Retail module of our Django backend application.  The Retail module contains information about store chains, individual store locations, and employees working within each store.  The API provides access to each of these resources in a RESTful manner.
 
-Our project goal is to create a frontend application that can be deployed separately from the backend application.  Now that we have an API defined and working, we can start working on the AngularJS client that will utilize the API!  AngularJS is a front-end framework that provide two-way data binding between HTML and Javascript to dynamically display data.  It allows us to clearly define application components and tie the components to the HTML templates.
+Our project goal is to create a frontend application that can be deployed separately from the backend application.  Now that we have an API defined and working, we can start working on the AngularJS client that will utilize the API!  AngularJS is a front-end framework that provides two-way data binding between HTML and Javascript to dynamically display data.  It allows us to clearly define application components and tie the components to the HTML templates.
 
 Our Angular application will run on a Node server.  The Node server will be a very simple application that serves the Angular application to the user and that is all.  Angular will take care of the URL routing so that it may act as a [single page application](https://en.wikipedia.org/wiki/Single-page_application).
 
