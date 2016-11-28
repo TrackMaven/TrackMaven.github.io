@@ -147,7 +147,7 @@ drf-sample/client$ node server.js
 Use port 8081 to connect to this server
 ```
 
-Unfortunately, if you visit `localhost:8081` you will see a blank page.  There isn't anything to serve until wthe Angular application is created.  
+Unfortunately, if you visit `localhost:8081` you will see a blank page.  There isn't anything to serve until the Angular application is created.
 
 <a name="angularsetup"></a>
 ## Angular Application Setup
