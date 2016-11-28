@@ -219,7 +219,7 @@ retail
 
 ----
 
-So, what is going on here?  By using `retail.controller` we are stating that this controller is defined as part of the `retail` module from `app.js`.  The controller is given the name "RetailController".  `$scope` is injected into the controller so the controller has access to it.  Think of `$scope` as a link that connects templates to controllers.  Any vairables defined on `$scope` in the controller can be used by cooresponding templates and vice versa.  The `$scope.message` variable is defined within the controller.  Any template using "RetailController" can view and alter the `message` variable.
+So, what is going on here?  By using `retail.controller` we are stating that this controller is defined as part of the `retail` module from `app.js`.  The controller is given the name "RetailController".  `$scope` is injected into the controller so the controller has access to it.  Think of `$scope` as a link that connects templates to controllers.  Any vairables defined on `$scope` in the controller can be used by corresponding templates and vice versa.  The `$scope.message` variable is defined within the controller.  Any template using "RetailController" can view and alter the `message` variable.
 
 The template defines a `div` with the `ng-controller` directive pointing to "RetailController".  You can read more about directives [here](https://docs.angularjs.org/guide/directive).  This provides the template use of "RetailController" and the `message` variable.  By placing `message` in `{{ }}` tags, the template displays text stored by the variable instead of a static string.  Whenever the `$scope.message` variable changes in the controller it will render on the template automatically thanks to variable binding!
 
