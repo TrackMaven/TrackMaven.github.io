@@ -296,7 +296,7 @@ Remember `index.html`? Well that file in the entry point to the Angular applicat
 
 ----
 
-At heart `index.html` is just the beginning to a standard page, but there are a few key differences.  First, the `ng-app` directive is used to specify that `SampleApplication` will be the angular application for this page.  Next, there are multiple `script` elements to importing everything we need for the application.  It's important to import all non-template parts of the application here, including the `angular.js` and `angular-ui-router.js` packages from bower.
+At heart `index.html` is just the beginning to a standard page, but there are a few key differences.  First, the `ng-app` directive is used to specify that `SampleApplication` will be the angular application for this page.  Next, there are multiple `script` elements to import everything we need for the application.  It's important to import all non-template parts of the application here, including the `angular.js` and `angular-ui-router.js` packages from bower.
 
 Lastly, the `ui-view` directive is being used to dynamically place our application states into the page.  When the user changes URLs within our page `appRoutes` determines which module is should be rendered and displays it in place of `ui-view`.  This, in essence, is how the single page application works.  Views are dynamically determined by the Angular router.
 
