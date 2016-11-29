@@ -7,6 +7,9 @@
     "type": "git",
     "url": "https://github.com/TrackMaven/TrackMaven.github.io.git"
   },
+  "scripts": {
+    "start": "gulp --require coffee-script/register"
+  },
   "author": "",
   "license": "ISC",
   "bugs": {

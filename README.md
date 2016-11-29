@@ -9,9 +9,14 @@ Build the builder docker container
 docker-compose build builder
 ```
 
-Then run the builder docker container
+Install the Javascript packages
 ```
-docker-compose up
+docker-compose run builder npm install .
+```
+
+Then run the application
+```
+docker-compose run --service-ports builder npm start
 ```
 
 Navigate to [localhost:8080](http://localhost:8080)/[localdocker:8080](http://localdocker:8080)
