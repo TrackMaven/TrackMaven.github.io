@@ -1,5 +1,5 @@
 Title: Getting Started with Django REST Framework (DRF) and AngularJS (Part 4)
-Date: 2016-09-22
+Date: 2016-11-29
 Category: Development
 Tags: django, django rest framework, angularjs
 Slug: getting-started-drf-angularjs-part-4
@@ -72,6 +72,8 @@ To setup the project, we need to define and install our project dependencies.  F
 *package.json*
 ```json
 {
+  "name": "drf-sample-client",
+  "description": "A sample Angular application",
   "dependencies": {
     "express": "^4.13.4",
     "bower": "1.7.9"
@@ -97,6 +99,8 @@ drf-sample/client$ npm install
 *bower.json*
 ```json
 {
+  "name": "drf-sample-client",
+  "description": "A sample Angular application",
   "dependencies": {
     "angular": "^1.5.7",
     "angular-ui-router": "^0.3.1",
