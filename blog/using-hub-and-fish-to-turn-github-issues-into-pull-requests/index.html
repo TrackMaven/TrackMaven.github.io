@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Using Hub and Fish to Turn GitHub Issues into Pull Requests - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Using Hub and Fish to Turn GitHub Issues into Pull Requests</h2>
+  <p class="blog-post-meta single">Posted on <strong>September 27, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/fletcher-heisler/">Fletcher Heisler</a><br>Category: <a href="/category/scripting/">Scripting</a> | <a href="http://engineroom.trackmaven.com/blog/using-hub-and-fish-to-turn-github-issues-into-pull-requests/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <h2>Or: How I Learned to Stop Worrying and Love ZenHub</h2>
+<p>Lately we've been making use of <a href="https://www.zenhub.io/">ZenHub</a> here at TrackMaven for tracking our engineering tasks as GitHub issues move from the backlog into our current cycle, become WIP, enter QC and eventually get merged in. Although ZenHub has certainly had its growing pains (they're still in open beta), it's been great to get GitHub issues organized in one place.</p>
+<p>One issue we've had in tracking our GitHub work, however, has been the inherent duplication between issues and pull requests. ZenHub, <a href="https://huboard.com/">HuBoard</a> and other tools have no ability to filter to <em>only</em> issues or <em>only</em> pull requests - and in fact, most of the time we wouldn't want to do so, since individual issues sometimes lead to multiple separate pull requests needed to tackle them.</p>
+<p>What we really needed was a way to <em>turn issues into pull requests</em> on demand, thus avoiding a lot of potential for duplication, noise and confusion when pull requests didn't directly reference their respective issues, commentary got split across issue/pull request, or things fell through our process when only one item of the pair had the correct WIP/QC status in ZenHub.</p>
+<p>Enter <a href="https://github.com/github/hub">hub</a>. hub, available via Homebrew or as a RubyGem, has a ton of useful features and shortcuts for turbocharging your git, but the one we use most is the <code>pull-request</code> command. This uses the GitHub API's <a href="https://developer.github.com/v3/pulls/#alternative-input">"alternative input"</a> to automagically <strong>turn an existing issue into a pull request.</strong></p>
+<p>The syntax can be annoyingly verbose, though, especially if you don't have upstream tracking on your git. Simple enough if you tend to work on a single project: set up an alias! Most of us here use the <a href="http://fishshell.com/">fish</a> shell, where <code>alias</code> is actually just a wrapper for <a href="http://ridiculousfish.com/shell/user_doc/html/commands.html#function">function</a>. The easiest way to set up a <code>pull-request</code> shortcut would then be the following two functions:</p>
+<div class="highlight"><pre><span></span>    <span class="k">function</span> hubpr
+        hub pull-request -b <span class="o">[</span>GitHubName<span class="o">]</span>:master -h <span class="o">[</span>GitHubName<span class="o">]</span>:<span class="nv">$argv</span><span class="o">[</span>1<span class="o">]</span> -i <span class="nv">$argv</span><span class="o">[</span>2<span class="o">]</span>
+    <span class="k">end</span>
+
+    <span class="k">function</span> pr
+        hubpr <span class="o">(</span>git rev-parse --abbrev-ref HEAD<span class="o">)</span> <span class="nv">$argv</span>
+    <span class="k">end</span>
+</pre></div>
+
+
+<p>You'll then need to save these functions to use them again later in other terminal sessions:</p>
+<div class="highlight"><pre><span></span>    <span class="nb">funcsave </span>hubpr
+    <span class="nb">funcsave </span>pr
+</pre></div>
+
+
+<p>(You can also use <code>funced</code> to edit the function corresponding to the passed-in name interactively if you need to make changes.)</p>
+<p>The <code>pr</code> function above will return the current git branch name, which gets passed into the <code>hubpr</code> function as the first argument. <code>hubpr</code> then sets the base and head branches based on the GitHub organization or username you've entered. You could of course replace <code>master</code> with <code>staging</code> or, depending on your workflow, include a separate argument to specify for determining the base branch, although this starts to undo some of the point of creating a shortcut.</p>
+<p>The second argument, the actual issue number, is supplied when actually using the function; for instance, to make a pull request out of the newly pushed current branch <code>fix-everything</code> that will close out issue number 123, you can now do:</p>
+<div class="highlight"><pre><span></span>pr 123
+</pre></div>
+
+
+<p>Finally, if you want to create a pull request based off of any arbitrary branch, rather than just your current branch, this simple addition to the args should do the trick: </p>
+<div class="highlight"><pre><span></span><span class="k">function</span> hubpr
+    hub pull-request -b <span class="o">[</span>GitHubName<span class="o">]</span>:<span class="nv">$argv</span><span class="o">[</span>3<span class="o">]</span> -h <span class="o">[</span>GitHubName<span class="o">]</span>:<span class="nv">$argv</span><span class="o">[</span>1<span class="o">]</span> -i <span class="nv">$argv</span><span class="o">[</span>2<span class="o">]</span>
+<span class="k">end</span>
+
+<span class="k">function</span> pr
+    <span class="k">if</span> <span class="k">set</span> -q argv<span class="o">[</span>2<span class="o">]</span>
+       hubpr <span class="o">(</span>git rev-parse --abbrev-ref HEAD<span class="o">)</span> <span class="nv">$argv</span><span class="o">[</span>1<span class="o">]</span> <span class="nv">$argv</span><span class="o">[</span>2<span class="o">]</span>
+    <span class="k">else</span>
+       hubpr <span class="o">(</span>git rev-parse --abbrev-ref HEAD<span class="o">)</span> <span class="nv">$argv</span><span class="o">[</span>1<span class="o">]</span> master
+    <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<p>That's it! No more unnecessary issue/pull request duplication.</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/github/">Github</a>, <a href="/tag/hub/">Hub</a>, <a href="/tag/zenhub/">Zenhub</a>, <a href="/tag/fish/">Fish</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image fletcher-heisler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Fletcher Heisler</h3>
+<p class="well-content">I am the VP of Engineering at <a href="http://trackmaven.com/">TrackMaven</a> and founder of <a href="https://realpython.com/">Real Python</a>.</p>
+<p class="well-content">You can follow me on <a href="https://twitter.com/fheisler">Twitter</a> and find a few of my open-source projects on <a href="https://github.com/fheisler">GitHub</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

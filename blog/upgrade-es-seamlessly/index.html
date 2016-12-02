@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Upgrade Elasticsearch Cluster Software and Hardware Seamlessly - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Upgrade Elasticsearch Cluster Software and Hardware Seamlessly</h2>
+  <p class="blog-post-meta single">Posted on <strong>March 29, 2016</strong> by <a href="http://engineroom.trackmaven.com/author/john-young/">John Young</a><br>Category: <a href="/category/devops/">DevOps</a> | <a href="http://engineroom.trackmaven.com/blog/upgrade-es-seamlessly/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <h2>Cluster Upgrades</h2>
+<p>Our decision to begin using Elasticsearch came from a fairly typical use case for the popular distributed data store. We had hundreds of millions of pieces of content, and we wanted to support text search across them. As we set out to migrate our architecture from a relatively simple Postgres setup to include indexing all of our documents into Elasticsearch, we did what everyone does: we played around with Elasticsearch and made some educated guesses about the hardware we would need to support our needs. And, as so often happens, we underestimated.</p>
+<p>Our biggest problem was with disk space usage. Indexing our dataset took up far more space than we had anticipated, and we needed to increase the size of the attached AWS EBS volumes on our instances. Somewhat less pressing than our disk usage was our heap usage, which made us want to increase the memory of each node so that we could allocate more heap space (friendly reminder that it's <a href="https://www.elastic.co/guide/en/elasticsearch/guide/current/heap-sizing.html#compressed_oops">very important</a> to keep your heap size below 30.5gb). All the while, we were several versions behind: running 1.3.2 at the time of 1.7.0's release. We figured the best course of action was to tackle all three of these problems at the same time, without any cluster downtime.</p>
+<p>Some caveats before we begin:
+ - This only applies to minor version upgrades, like 1.x to 1.x, or 2.x to 2.x. Major version upgrades, like 1.x to 2.x, are more complicated and require a full cluster restart.
+ - If you only have one master-eligible node, then taking it down will make your cluster very sad. If you're using the more commonly recommended number of 3 master-eligible nodes, a new one will be elected seamlessly as you take each down individually for upgrades
+ - Our infrastructure is hosted on AWS, but the underlying principles are the same across any hardware cluster
+ - If you don't already have backups of your production data, do that before thinking about any of this</p>
+<h2>Out with the old, in with the new</h2>
+<p>From a high level, our process looks like this:</p>
+<ol>
+<li>Launch a new, larger EC2 instance based off our current node AMIs, with larger EBS volumes attached</li>
+<li>Upgrade this instance's version of Elasticsearch</li>
+<li>Create a new AMI for our upgraded instance</li>
+<li>Join this new node to our production cluster</li>
+<li>Re-allocate all shards off an older, non-upgraded node</li>
+<li>Allow the cluster to rebalance itself</li>
+<li>Once all nodes have been shipped off the old node, shut it down</li>
+<li>Repeat this process of spawning new instances based off the upgraded AMI until all nodes have been upgraded</li>
+</ol>
+<p>Creating AMIs, launching instances based off of them, and changing instance/volume sizes are steps specific to AWS, and outside the scope of this post. There is a ton of great documentation around these things already available, so I will be skipping over anything detailed on them. Let's get started.</p>
+<p>First, launch a new instance with the specs you want. It makes things easier if you base this instance off an image of a working Elasticsearch node, so that your config settings are retained and you do not forget to install any required dependencies. You don't want this node to join your cluster yet, as you still need to upgrade it. We prevented this by simply not giving it access to our Elasticsearch AWS security groups. Now, let's upgrade our version.</p>
+<p>Elasticsearch has good <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/rolling-upgrades.html">documentation</a> around how to perform a rolling version upgrade. It's best to follow their steps closely. However, since the node we're upgrading isn't a part of our cluster yet, it's much simpler. We have Elasticsearch installed from their tar packages, so we download the latest version, and place it in a directory next to our current version. We also manage our Elasticsearch processes with <code>supervisor</code>, so we shut it down as well.</p>
+<ul>
+<li>
+<p>Stop supervisor:</p>
+<p><code>sudo service supervisor stop</code></p>
+</li>
+<li>
+<p>Download and extract the new version:</p>
+<p><code>wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.0.tar.gz &amp;&amp; tar xvzf elasticsearch-1.7.0.tar.gz &amp;&amp; rm -f elasticsearch-1.7.0.tar.gz &amp;&amp; sudo mv elasticsearch-1.7.0 /opt/elasticsearch-1.7</code></p>
+</li>
+<li>
+<p>Delete the new version's config, and copy over your previous config settings:</p>
+<p><code>sudo rm /opt/elasticsearch-1.7/config/elasticsearch.yml</code></p>
+<p><code>sudo mv /opt/elasticsearch/config/elasticsearch.yml /opt/elasticsearch-1.7/config/</code></p>
+</li>
+<li>
+<p>Delete the previous version and put the new version in its place:</p>
+<p><code>sudo rm -rf /opt/elasticsearch</code></p>
+<p><code>sudo mv /opt/elasticsearch-1.7 /opt/elasticsearch</code></p>
+</li>
+<li>
+<p>Restart supervisor:</p>
+<p><code>sudo service supervisor start</code></p>
+</li>
+</ul>
+<p>With this newly upgraded node, we create an AMI of this instance so that we don't need to keep performing this manual upgrade process. All new instances going forward should be based off this upgraded image.</p>
+<p>Now, it's time to join this node to the cluster. We add the necessary security groups and watch our cluster health (<code>localhost:9200/_cluster/health?pretty</code>) show us what's happening. We should see a new data node join the cluster, and our cluster health change from <code>green</code> to <code>yellow</code>. The <code>yellow</code> state happens because of our mismatched version numbers in the cluster. <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/rolling-upgrades.html#_step_6_wait_for_the_node_to_recover">Primary shards assigned to the newer version will not allocate their replica shards to older versioned nodes</a>. With only one upgraded node, we will have unassigned replica shards. This is remedied once we have two upgraded nodes in the cluster, and health will again return to <code>green</code>.</p>
+<p>Once our new node has joined the cluster successfully, it's time to shut down one of our old nodes.</p>
+<ul>
+<li>Re-allocate all shards off the node</li>
+</ul>
+<div class="highlight"><pre><span></span>curl -XPUT localhost:9200/_cluster/settings -d &#39;{
+    &quot;transient&quot; :{
+        &quot;cluster.routing.allocation.exclude._ip&quot; : &quot;&lt;IP Address&gt;&quot;
+    }
+}&#39;
+</pre></div>
+
+
+<ul>
+<li>Wait for the cluster to re-balance itself by watching your cluster health (<code>curl localhost:9200/_cluster/health?pretty</code>) waiting for <code>relocating_shards</code> to go to 0</li>
+<li>Shut down the node</li>
+<li>Stop and/or terminate the instance, kill the Elasticsearch process, whatever you want to do to decommision this node</li>
+</ul>
+<p>That's it. From here, you can spawn an additional instance based off the already upgraded image, and repeat the process of disabling allocation on an older node and decommissioning them one by one. The same process applies to all nodes, whether master or client or data.</p>
+<p>Enjoy your new cluster!</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/elasticsearch/">elasticsearch</a>, <a href="/tag/how-to/">how-to</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image john-young-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>John Young</h3>
+<p class="well-content">I am a Senior Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Follow me on <a href="https://twitter.com/johnyoungdev">Twitter</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

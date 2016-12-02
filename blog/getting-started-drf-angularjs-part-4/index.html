@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Getting Started with Django REST Framework (DRF) and AngularJS (Part 4) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Getting Started with Django REST Framework (DRF) and AngularJS (Part 4)</h2>
+  <p class="blog-post-meta single">Posted on <strong>November 29, 2016</strong> by <a href="http://engineroom.trackmaven.com/author/tim-butler/">Tim Butler</a><br>Category: <a href="/category/development/">Development</a> | <a href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-4/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>This is the fourth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.</p>
+<p><strong>Read Previous Posts:</strong> </p>
+<ul>
+<li><a href="/blog/getting-started-drf-angularjs-part-1/">Part 1 - Initial Project Setup</a></li>
+<li><a href="/blog/getting-started-drf-angularjs-part-2/">Part 2 - Django Models and the ORM</a></li>
+<li><a href="/blog/getting-started-drf-angularjs-part-3/">Part 3 - Serializers, views, and API routes</a></li>
+</ul>
+<p><strong>Write:</strong></p>
+<ul>
+<li><a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-4">Part 4 Supplementary Code</a></li>
+</ul>
+<hr />
+<p>This post focuses on getting started with AngularJS, with topics covering</p>
+<ul>
+<li><a href="#introduction">A Recap and an Introduction to AngularJS</a></li>
+<li><a href="#setup">Client Project Setup</a></li>
+<li><a href="#nodeserver">The Node Server</a></li>
+<li><a href="#angularsetup">Angular Application Setup</a></li>
+<li><a href="#results">The First Page</a></li>
+</ul>
+<p>This guide uses <a href="https://github.com/angular/angular.js">AngularJS</a> <code>1.5.7</code> and <a href="https://github.com/angular-ui/ui-router">Angular UI Router</a> <code>0.3.1</code>.  Further, this guide assumes you have <a href="https://nodejs.org/en/">Node.js</a> and <a href="https://www.npmjs.com/">npm</a> installed on your system.</p>
+<p><a name="introduction"></a></p>
+<h2>A Recap and an Introduction to AngularJS</h2>
+<p>Last we met, we finished the API for the Retail module of our Django backend application.  The Retail module contains information about store chains, individual store locations, and employees working within each store.  The API provides access to each of these resources in a RESTful manner.</p>
+<p>Our project goal is to create a frontend application that can be deployed separately from the backend application.  Now that we have an API defined and working, we can start working on the AngularJS client that will utilize the API!  AngularJS is a front-end framework that provides two-way data binding between HTML and Javascript to dynamically display data.  It allows us to clearly define application components and tie the components to the HTML templates.</p>
+<p>Our Angular application will run on a Node server.  The Node server will be a very simple application that serves the Angular application to the user and that is all.  Angular will take care of the URL routing so that it may act as a <a href="https://en.wikipedia.org/wiki/Single-page_application">single page application</a>.</p>
+<p><a name="setup"></a></p>
+<h2>Client Project Setup</h2>
+<p>First thing's first - we need to setup our client application that will house both the code for the Node server and the code for the Angular application.  To start, create the following directory structure within  <code>drf-sample</code>.</p>
+<div class="highlight"><pre><span></span>drf_sample/
+├── client/
+│   ├── bower.json
+│   ├── index.html
+│   ├── package.json
+│   ├── public/
+│   │   ├── app.js
+│   │   ├── appRoutes.js
+│   │   └── components/
+└── └── server.js
+</pre></div>
+
+
+<p>This structure contains a a lot, so it is worthwhile to go over the main function of each part as we setup our client project.</p>
+<ul>
+<li><code>package.json</code> - Specifies overall project dependencies</li>
+<li><code>bower.json</code> - Specifies AngularJS dependencies</li>
+<li><code>index.html</code> - Acts as the entry point for our Angular application</li>
+<li><code>server.js</code> - Serves the Angular application to the user</li>
+<li><code>public/app.js</code> - Defines all modules associated with the Angular application</li>
+<li><code>public/appRoutes.js</code> - Defines how a user can reach each application module</li>
+<li><code>public/components/</code> - Hold the source code for application module</li>
+</ul>
+<p>To setup the project, we need to define and install our project dependencies.  First, configure <code>package.json</code> to download <code>express</code> for our Node server and <code>bower</code> so we can install our Angular dependencies.</p>
+<hr />
+<p><em>package.json</em></p>
+<div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;drf-sample-client&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A sample Angular application&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;express&quot;</span><span class="p">:</span> <span class="s2">&quot;^4.13.4&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;bower&quot;</span><span class="p">:</span> <span class="s2">&quot;1.7.9&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p><em>Note:</em> There are a number of fields possible in <code>package.json</code> left out of this example.  The <a href="https://docs.npmjs.com/files/package.json">package.json documentation</a> does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download <code>express</code> and <code>bower</code>.</p>
+<hr />
+<p>Since we already have <code>npm</code> installed, we can install all of our project dependencies.</p>
+<div class="highlight"><pre><span></span>client$ <span class="nb">cd</span> client/
+drf-sample/client$ npm install
+</pre></div>
+
+
+<p><code>node_modules</code> is created within the client directory and contains the contents of both installed packages.  Now that we have <a href="https://bower.io/">bower</a> downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in <code>bower.json</code>.</p>
+<hr />
+<p><em>bower.json</em></p>
+<div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;drf-sample-client&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A sample Angular application&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;angular&quot;</span><span class="p">:</span> <span class="s2">&quot;^1.5.7&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;angular-ui-router&quot;</span><span class="p">:</span> <span class="s2">&quot;^0.3.1&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;angular-bootstrap&quot;</span><span class="p">:</span> <span class="s2">&quot;^1.3.3&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p><em>Note:</em> There are a number of fields possible in <code>bower.json</code> left out of this example.  The <a href="https://github.com/bower/spec/blob/master/json.md">bower.json documentation</a> does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download <code>angular</code>, <code>angular-ui-router</code>, and <code>angular-bootstrap</code>.</p>
+<hr />
+<p>Next, install the dependencies using bower.</p>
+<div class="highlight"><pre><span></span>drf-sample/client$ bower install --config.interactive<span class="o">=</span><span class="nb">false</span> --allow-root
+</pre></div>
+
+
+<p><code>bower_components</code> is created within the client directory and contains the contents of the installed angular components.</p>
+<p>It's that easy!  We have downloaded all of our required dependencies, so now we can start coding our frontend server.</p>
+<p><a name="nodeserver"></a></p>
+<h2>The Node Server</h2>
+<p>The Node server is a very simple application that serves our Angular application to users.  We will be using <a href="https://expressjs.com/"><code>express</code></a>, a minimalist web framework, to specify a directory and port for which to serve the application.  To start, edit the <code>server.js</code> file to contain the server code:</p>
+<hr />
+<p><em>server.js</em></p>
+<div class="highlight"><pre><span></span>var express = require(&#39;express&#39;);
+var server = express();
+server.use(express.static(__dirname));
+
+var port = process.env.PORT || 8081;
+server.listen(port);
+console.log(&#39;Use port &#39; + port + &#39; to connect to this server&#39;);
+
+exports = module.exports = server;
+</pre></div>
+
+
+<hr />
+<p>This code creates a new <code>express</code> instance, defines the directory to look for as the entry point (in our case it's the current directory), defines a port to run the server on, and exports the <code>express</code> instance so that we can access it from outside the file.  With this setup we can run the server using the following:</p>
+<div class="highlight"><pre><span></span>drf-sample/client$ node server.js 
+Use port 8081 to connect to this server
+</pre></div>
+
+
+<p>Unfortunately, if you visit <code>localhost:8081</code> you will see a blank page.  There isn't anything to serve until the Angular application is created.</p>
+<p><a name="angularsetup"></a></p>
+<h2>Angular Application Setup</h2>
+<p>This is where things get a bit more complex.  The structure of AngularJS applications isn't necessarily difficult, but there are a few individual parts that come together to make the whole.  </p>
+<p>AngularJS applications are made up of modules.  These modules are encapsulated pieces of code that perform specific functions within the application.  We will be building a component for our Retail application.  Eventually, this module will query for Retail information from the Retail API and display information about retailers.  For the purpose of this post, however, we will just be printing the standard "Hello World" to the page to prove that the application has been created correctly.  </p>
+<p>First, define the Angular Retail module.  Add the following retail module files to the components directory:</p>
+<div class="highlight"><pre><span></span>components/
+└── retail/
+    ├── controllers/
+    │   └── retail.control.js
+    ├── services/
+    └── templates/
+        └── retail.template
+</pre></div>
+
+
+<p>Angular modules can typically be split into three main parts: controllers, services, and templates.  Templates contain the HTML code shown to the user.  Controllers are JS files that define dynamic content displayed by the templates through <code>$scope</code> variables.  Services are helper JS files typically used to define classes, contact external APIs, etc.</p>
+<h3>Full Application Definition</h3>
+<p>Since Angular applications are just a combination of modules, there are a few modules that we need to define.  First, the <code>retail</code> module will hold all controller, service, and template code that involves the Retail API.  Then we need to define the main application module that uses <code>retail</code>.</p>
+<p>Alter <code>app.js</code> with the following:</p>
+<hr />
+<p><em>app.js</em></p>
+<div class="highlight"><pre><span></span><span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
+
+<span class="kd">var</span> <span class="nx">retail</span> <span class="o">=</span> <span class="nx">angular</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;retail&quot;</span><span class="p">,</span> <span class="p">[]);</span>
+
+<span class="nx">angular</span>
+    <span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s1">&#39;SampleApplication&#39;</span><span class="p">,</span> <span class="p">[</span>
+        <span class="s1">&#39;appRoutes&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;retail&#39;</span>
+    <span class="p">]);</span>
+</pre></div>
+
+
+<hr />
+<p>Here we created an angular module named <code>retail</code>.  Nothing is defined as part of this module yet, but having the module available will come in handy later.  Second, the <code>SampleApplication</code> module is created.  This will act as the main module that brings together all other modules within the application.  <code>appRoutes</code> and <code>retail</code> are dependencies for <code>SampleApplication</code>.  Don't worry about <code>appRoutes</code> for now, we will get to that later.  Let's start on the <code>retail</code> module.</p>
+<h3>Controllers and Templates</h3>
+<p>As a first pass, the <code>retail</code> module will have two parts: a controller and a template.  This is a good place to start since they are so directly connected.  Modify the <code>retail</code> controller and template files with the following:</p>
+<hr />
+<p><em>retail.control.js</em></p>
+<div class="highlight"><pre><span></span><span class="nx">retail</span>
+    <span class="p">.</span><span class="nx">controller</span><span class="p">(</span><span class="s1">&#39;RetailController&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;$scope&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$scope</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">$scope</span><span class="p">.</span><span class="nx">message</span> <span class="o">=</span> <span class="s2">&quot;Hello World&quot;</span><span class="p">;</span>
+<span class="p">}]);</span>
+</pre></div>
+
+
+<p><em>retail.template</em></p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">div</span> <span class="na">ng-controller</span><span class="o">=</span><span class="s">&quot;RetailController&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        {{ message }}
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+</pre></div>
+
+
+<hr />
+<p>So, what is going on here?  By using <code>retail.controller</code> we are stating that this controller is defined as part of the <code>retail</code> module from <code>app.js</code>.  The controller is given the name "RetailController".  <code>$scope</code> is injected into the controller so the controller has access to it.  Think of <code>$scope</code> as a link that connects templates to controllers.  Any vairables defined on <code>$scope</code> in the controller can be used by corresponding templates and vice versa.  The <code>$scope.message</code> variable is defined within the controller.  Any template using "RetailController" can view and alter the <code>message</code> variable.</p>
+<p>The template defines a <code>div</code> with the <code>ng-controller</code> directive pointing to "RetailController".  You can read more about directives <a href="https://docs.angularjs.org/guide/directive">here</a>.  This provides the template use of "RetailController" and the <code>message</code> variable.  By placing <code>message</code> in <code>{{ }}</code> tags, the template displays text stored by the variable instead of a static string.  Whenever the <code>$scope.message</code> variable changes in the controller it will render on the template automatically thanks to variable binding!</p>
+<hr />
+<p><em>Note:</em> Notice we don't have to specify <code>$scope</code> when using variables in the template.  Any variables used in a template will automatically be assumed to be on <code>$scope</code>.  </p>
+<hr />
+<p>Great!  We have our basic <code>retail</code> control module defined, but we still need a way for the user to access it.  </p>
+<h3>Application Routing</h3>
+<p>This is where <code>appRoutes.js</code> comes into play.  <code>appRoutes.js</code> defines states of the Angular application based on the URL the user visits.  When the user visits a new URL, <code>appRoutes</code> determines the template and controller that should be used by that URL.  Alter <code>appRoutes.js</code> with the following:</p>
+<hr />
+<p><em>appRoutes.js</em></p>
+<div class="highlight"><pre><span></span><span class="nx">angular</span>
+    <span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s1">&#39;appRoutes&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ui.router&quot;</span><span class="p">])</span>
+    <span class="p">.</span><span class="nx">config</span><span class="p">([</span><span class="s1">&#39;$stateProvider&#39;</span><span class="p">,</span> <span class="s1">&#39;$urlRouterProvider&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$stateProvider</span><span class="p">,</span> <span class="nx">$urlRouterProvider</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="nx">$stateProvider</span><span class="p">.</span><span class="nx">state</span><span class="p">({</span>
+        <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;retail&#39;</span><span class="p">,</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span>
+        <span class="nx">templateUrl</span><span class="o">:</span> <span class="s1">&#39;public/components/retail/templates/retail.template&#39;</span><span class="p">,</span>
+        <span class="nx">controller</span><span class="o">:</span> <span class="s1">&#39;RetailController&#39;</span>
+    <span class="p">});</span>
+
+    <span class="nx">$urlRouterProvider</span><span class="p">.</span><span class="nx">otherwise</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">);</span>
+<span class="p">}]);</span>
+</pre></div>
+
+
+<hr />
+<p>Here, another module is defined: <code>appRoutes</code> .  This module has a dependency on <code>ui.router</code> so that we can use <a href="https://github.com/angular-ui/ui-router/wiki"><code>$stateProvider</code></a> to alter application states.</p>
+<p>One state is defined in <code>appRoutes</code>: "retail".  When users visit the base URL for our application, <code>/</code>, we want them to see the Retail control module using the retail template and controller.  </p>
+<p>Further, <code>appRoutes</code> states that users should be redirected to <code>/</code> when they visit a URL that has not explicitly defined.  </p>
+<p><a name="results"></a></p>
+<h2>The First Page</h2>
+<p>Remember <code>index.html</code>? Well that file in the entry point to the Angular application.  Add the following code to <code>index.html</code>.</p>
+<hr />
+<p><em>index.html</em></p>
+<div class="highlight"><pre><span></span><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="p">&lt;</span><span class="nt">html</span> <span class="na">ng-app</span><span class="o">=</span><span class="s">&quot;SampleApplication&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">&quot;utf-8&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>Angular Sample - Retail Application<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+
+        <span class="c">&lt;!--  Angular Setup --&gt;</span>
+        <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;bower_components/angular/angular.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;bower_components/angular-ui-router/release/angular-ui-router.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+
+        <span class="c">&lt;!-- Application Setup --&gt;</span>
+        <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;public/appRoutes.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;public/app.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+
+        <span class="c">&lt;!--  Controllers --&gt;</span>
+        <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;public/components/retail/controllers/retail.control.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+        <span class="c">&lt;!-- The dynamic templates will be served within this div --&gt;</span>
+        <span class="p">&lt;</span><span class="nt">ui-view</span><span class="p">&gt;&lt;/</span><span class="nt">ui-view</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</pre></div>
+
+
+<hr />
+<p>At heart <code>index.html</code> is just the beginning to a standard page, but there are a few key differences.  First, the <code>ng-app</code> directive is used to specify that <code>SampleApplication</code> will be the angular application for this page.  Next, there are multiple <code>script</code> elements to import everything we need for the application.  It's important to import all non-template parts of the application here, including the <code>angular.js</code> and <code>angular-ui-router.js</code> packages from bower.</p>
+<p>Lastly, the <code>ui-view</code> directive is being used to dynamically place our application states into the page.  When the user changes URLs within our page <code>appRoutes</code> determines which module is should be rendered and displays it in place of <code>ui-view</code>.  This, in essence, is how the single page application works.  Views are dynamically determined by the Angular router.</p>
+<p>That's it!  If we run <code>node server.js</code> then we can visit the page that we created!</p>
+<p><center><img alt="map3" src="/images/sample-app-hello.png" /></center></p>
+<h2>Looking Forward</h2>
+<p>We now have a fully functional AngularJS application.  It's simple, yes, but it lays the foundation for the rest of the application.  Next time we can start utilizing the Retail API and displaying the API results for the user! </p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/django/">django</a>, <a href="/tag/django-rest-framework/">django rest framework</a>, <a href="/tag/angularjs/">angularjs</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image tim-butler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Tim Butler</h3>
+<p class="well-content">I'm a Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">I specialize in Python backend development through Django and Django Rest Framework. Want to get in touch? Feel free to drop me an <a href="mailto:tim.butler@trackmaven.com">email</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

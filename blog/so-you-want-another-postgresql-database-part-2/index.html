@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+So You Want Another PostgreSQL Database? (Part 2) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">So You Want Another PostgreSQL Database? (Part 2)</h2>
+  <p class="blog-post-meta single">Posted on <strong>October 18, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/john-young/">John Young</a><br>Category: <a href="/category/devops/">DevOps</a> | <a href="http://engineroom.trackmaven.com/blog/so-you-want-another-postgresql-database-part-2/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p><strong>Read <a href="/blog/so-you-want-another-postgresql-database-part-1/">Part 1</a></strong></p>
+<h2>Automatic nightly base backups to Amazon S3 using WAL-E</h2>
+<p>In the first part of this series of posts, we set up streaming replication between a primary database and a replica database by shipping WAL files between them. While functional, it lacks the robustness and safety that a production database requires. To add an additional layer of protection to our process, we ship our WAL files to S3 so that our replica can ALWAYS bring itself up to date regardless of an enormous write load on the primary or a temporary network disruption preventing the primary and replica from communicating with each other. </p>
+<p>We also create a base backup of our database nightly and send that to S3 so that we can restore our database to any point in time we need in case of catastrophe. With a base backup and the WAL files written since that backup was taken, your database can very easily be recovered to any point in time you specify.</p>
+<h3>S3</h3>
+<ul>
+<li>First things first, create a bucket on S3 to store our backups</li>
+<li>Turn on versioning as a safeguard against file manipulation</li>
+<li>Create a user in AWS IAM to have Put access to the S3 bucket</li>
+<li>Give the user read/put access, but NOT delete access. If, for some reason, our database server is compromised and an attacker gets our AWS credentials for this user, they will be able to overwrite our files but not delete them. Thanks to versioning, overwriting of our files is a non-issue. If the name of our bucket is db-backup, a policy like this will do:</li>
+</ul>
+<div class="highlight"><pre><span></span>{
+  &quot;Version&quot;: &quot;2014-05-14&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;Stmt1399394132000&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;s3:GetObject&quot;,
+        &quot;s3:ListBucket&quot;,
+        &quot;s3:PutObject&quot;
+      ],
+      &quot;Resource&quot;: [
+        &quot;arn:aws:s3:::db-backup&quot;,
+        &quot;arn:aws:s3:::db-backup/*&quot;
+      ]
+    }
+  ]
+}
+</pre></div>
+
+
+<ul>
+<li>Create a new user, making sure to save their AWS credentials (access key AND secret key), and add them to the newly created group</li>
+</ul>
+<h3>Master and Slave Database Servers</h3>
+<p>Install WAL-E and its dependencies, then set it up by saving your bucket name, AWS user's access key, and AWS user's secret key.</p>
+<ul>
+<li><code>sudo apt-get install daemontools python-dev lzop pv python-pip</code></li>
+<li>I ran into problems with my older version of six, so just to be safe... <code>sudo pip install -U six</code></li>
+<li><code>sudo pip install wal-e</code></li>
+<li>Set up WAL-E:</li>
+</ul>
+<div class="highlight"><pre><span></span>umask u=rwx,g=rx,o=
+sudo mkdir -p /etc/wal-e.d/env
+echo &quot;&lt;AWS SECRET KEY&gt;&quot; | sudo tee /etc/wal-e.d/env/AWS_SECRET_ACCESS_KEY
+echo &quot;&lt;AWS ACCESS KEY&gt;&quot; | sudo tee /etc/wal-e.d/env/AWS_ACCESS_KEY_ID
+echo &#39;s3://db-backup/&#39; | sudo tee /etc/wal-e.d/env/WALE_S3_PREFIX
+sudo chown -R root:postgres /etc/wal-e.d
+</pre></div>
+
+
+<ul>
+<li>That's all there is to it when it comes to setting up WAL-E. Ensure that the following options are set correctly in /etc/postgresql/9.3/main/postgresql.conf:</li>
+</ul>
+<div class="highlight"><pre><span></span>wal_level = &#39;hot_standby&#39;
+archive_mode = on
+archive_command = &#39;envdir /etc/wal-e.d/env /usr/local/bin/wal-e wal-push %p&#39;
+archive_timeout = 60
+</pre></div>
+
+
+<ul>
+<li>Become the postgres user: <code>su - postgres</code></li>
+<li>Set up a cron job: </li>
+<li><code>crontab -e</code></li>
+<li><code>0 2 * * * /usr/bin/envdir /etc/wal-e.d/env /usr/local/bin/wal-e backup-push /data/trackmaven</code> will push a base backup of the master database to S3 at 2am nightly</li>
+</ul>
+<p>We will also need to clean up our S3 bucket by deleting old base backups. This can be done manually, but can also be done with WAL-E. You will need to add Delete permissions to the bucket before WAL-E can do it, so understand the risks that are associated with that. The following command will keep the 5 most recent base backups and delete all others at 2:30am nightly. We could schedule it to run after the nightly backup like this:</p>
+<ul>
+<li><code>crontab -e</code></li>
+<li><code>30 2 * * * /usr/bin/envdir /etc/wal-e.d/env /usr/local/bin/wal-e delete --confirm retain 5</code></li>
+</ul>
+<p><strong>Continue onto <a href="/blog/so-you-want-another-postgresql-database-part-3/">Part 3</a></strong></p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/postgres/">postgres</a>, <a href="/tag/double-database/">double-database</a>, <a href="/tag/how-to/">how-to</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image john-young-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>John Young</h3>
+<p class="well-content">I am a Senior Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Follow me on <a href="https://twitter.com/johnyoungdev">Twitter</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

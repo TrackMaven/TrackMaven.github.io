@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Getting Started with Django REST Framework (DRF) and AngularJS (Part 1) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Getting Started with Django REST Framework (DRF) and AngularJS (Part 1)</h2>
+  <p class="blog-post-meta single">Posted on <strong>November 10, 2015</strong> by <a href="http://engineroom.trackmaven.com/author/tim-butler/">Tim Butler</a><br>Category: <a href="/category/development/">Development</a> | <a href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-1/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>This is the first section in a series about getting started with <a href="https://www.djangoproject.com/">Django</a>, <a href="http://www.django-rest-framework.org/">Django REST Framework (DRF)</a> and <a href="https://angularjs.org/">AngularJS</a>.  The goal of this series to to create an extensive, RESTful web application that uses Django and Django REST Framework as the server application and AngularJS for the client application.  We will not be using Django templates here; our front- and back-end applications will be separate entities.</p>
+<p>For this project, we will be using Django <code>1.8.5</code> and Django REST Framework <code>3.3.0</code>.  Further, this guide assumes you have installed standard python development tools and <a href="https://virtualenvwrapper.readthedocs.org/en/latest/">virtualenvwrapper</a>.</p>
+<h2>Goals of this Section</h2>
+<p>This section focuses on Django, covering the following topics:</p>
+<ul>
+<li><a href="#introduction">Brief introduction to Django, Django REST Framework, and AngularJS</a></li>
+<li><a href="#project-creation">Initial project setup and creation</a></li>
+<li><a href="#folder-structure">Folder structure modification to support both front- and back-end development</a></li>
+</ul>
+<p><a name="introduction"></a></p>
+<h2>A Brief Introduction: Django, DRF and AngularJS</h2>
+<p>RESTful APIs have become increasingly popular among modern web applications since they provide a standard means to interact with resources across applications.  Conforming to RESTful constraints can create web applications that are both high-performing and maintainable.  The Django and DRF frameworks provide developers with fast and secure ways to create RESTful web applications packed full of useful features, such as an extensive ORM, serialization, custom authentication and permissions classes, and browsable APIs among others.</p>
+<p>Think of Django as the database manager for your server.  The Django ORM provides powerful ways to locally setup and manage database tables and the data within them.  DRF is the external window into your database.  DRF provides the means to create powerful APIs to access application data while allowing developers to customize permissions, authentication, filtering, and more.  AngularJS if a front-end framework that provides two-way data binding between HTML and Javascript to dynamically display data.</p>
+<p>At TrackMaven, we use Django and DRF as the main backend frameworks for our web application development and AngularJS for front-end development.  Through these, we find that web application development is both straight-forward and extensible enough to fit into our growing demands while maintaining RESTful principles.</p>
+<p><a name="project-creation"></a></p>
+<h2>Setting up a New Project</h2>
+<h3>Creating an Initial Project</h3>
+<p>Getting started with Django and DRF is quite easy.  Django provides a startup script that builds a starter project with default configurations, an initial <code>/admin/</code> API endpoint, and a management command file for running the application.</p>
+<p>To start, let's create a virtual environment for our sample project and download our required packages.</p>
+<div class="highlight"><pre><span></span>$ mkvirtualenv drf-sample
+$ pip install <span class="nv">django</span><span class="o">==</span>1.8.5
+$ pip install <span class="nv">djangorestframework</span><span class="o">==</span>3.3.0
+</pre></div>
+
+
+<p>Within the virtual environment, we can run the Django start-up script to create a new project named <code>drf_sample</code></p>
+<div class="highlight"><pre><span></span>$ django-admin startproject drf_sample
+</pre></div>
+
+
+<p>We now have a new project folder named <code>drf_sample</code> with the following structure:</p>
+<div class="highlight"><pre><span></span>drf_sample/
+├── drf_sample
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+└── manage.py
+</pre></div>
+
+
+<p>Cool, but what do these files actually do?</p>
+<dl>
+  <dt>settings.py</dt>
+  <dd style="padding: 0 0 10px 25px;">Contains Django/DRF settings and specifies where various project modules are located.  Additional information on the file can be found in the <a href="https://docs.djangoproject.com/en/1.8/topics/settings/">Django Settings documentation</a></dd>
+  <dt>urls.py</dt>
+  <dd style="padding: 0 0 10px 25px;">The URL dispatcher for the project API.  Pre-loaded with an <em>/admin/</em> endpoint for project administration.</dd>
+  <dt>wsgi.py</dt>
+  <dd style="padding: 0 0 10px 25px;">Uses <a href="http://wsgi.readthedocs.org/en/latest/">WSGI</a> to define the runnable application server.</dd>
+  <dt>manage.py</dt>
+  <dd style="padding: 0 0 10px 25px;">Provides command-line options for administrators to setup/run the application server and sync the database with our Django model definitions.  More information on this file can be found in the <a href="https://docs.djangoproject.com/en/1.8/ref/django-admin/">Django Admin documentation</a></dd>
+</dl>
+
+<p><a name="folder-structure"/></a></p>
+<h2>Fitting the Directory Structure to our Needs</h2>
+<p>The default Django project folder structure is quite minimal and doesn't give us an easy way to organize server code vs client code within the same project.  Remember, our goal is to create a web application that supports both server and client as two separate applications within the same project, so a differentiation between server and client code is preferred.</p>
+<p>Why use separate applications?  Simple answer: cleaniless, decoupling and consistency.</p>
+<ul>
+<li>Keeping the server and client code separate makes for a cleaner development environment.</li>
+<li>Other than the API contract ensured by the server, the code for the front- and back-end contains little-to-no dependencies between each other.  If the server goes down, the client can still function and report an outtage if necessary.</li>
+<li>Our server application provides a specific contract as to how data within the server can be accessed.  The client will use that contract to access the data it needs to display on the front-end.  All other applications accessing server data will use the same contract.  Server data access remains consistent irregardless of the application accessing the data.</li>
+</ul>
+<h4>Update the Directory Structure</h4>
+<p>Let's modify the default project folder structure to support our separate applications.  The modified folder structure should look like the following:</p>
+<div class="highlight"><pre><span></span>drf_sample/
+├── client
+└── server
+    ├── config
+    │   ├── __init__.py
+    │   ├── settings.py
+    │   └── wsgi.py
+    ├── __init__.py
+    ├── manage.py
+    └── urls.py
+</pre></div>
+
+
+<p><em>Note: At this point, our <code>__init__.py</code> files are blank, so create them where necessary.</em></p>
+<p>The updated structure separates our newly created Django server project from our future development space for the AngularJS client.  All Django and DRF development is done in the <code>server</code> directory while all front-end AngularJS development is done in the <code>client</code> directory.</p>
+<h4>Fix the Default Module Links</h4>
+<p>Various parts of a Django application need to link to other modules within the project.  The default project setup used default links based on the original project structure.  Modifying the structure has caused those links to break.  Moving forward, we will ensure that all new module links conform to the new directory structure, but the current broken links must be fixed before we move on.  The following line changes will fix our issues:</p>
+<p><em>In server/config/settings.py</em></p>
+<div class="highlight"><pre><span></span><span class="n">ROOT_URLCONF</span> <span class="o">=</span> <span class="s1">&#39;urls&#39;</span>
+    <span class="n">changes</span> <span class="n">to</span>
+<span class="n">ROOT_URLCONF</span> <span class="o">=</span> <span class="s1">&#39;server.urls&#39;</span>
+
+<span class="n">WSGI_APPLICATION</span> <span class="o">=</span> <span class="s1">&#39;wsgi.application&#39;</span>
+    <span class="n">changes</span> <span class="n">to</span>
+<span class="n">WSGI_APPLICATION</span> <span class="o">=</span> <span class="s1">&#39;config.wsgi.application&#39;</span>
+</pre></div>
+
+
+<p><em>In server/config/wsgi.py</em></p>
+<div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;DJANGO_SETTINGS_MODULE&quot;</span><span class="p">,</span> <span class="s2">&quot;drf_sample.settings&quot;</span><span class="p">)</span>
+    <span class="n">changes</span> <span class="n">to</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;DJANGO_SETTINGS_MODULE&quot;</span><span class="p">,</span> <span class="s2">&quot;settings&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p><em>In server/manage.py:</em></p>
+<div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;DJANGO_SETTINGS_MODULE&quot;</span><span class="p">,</span> <span class="s2">&quot;drf_sample.settings&quot;</span><span class="p">)</span>
+    <span class="n">changes</span> <span class="n">to</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;DJANGO_SETTINGS_MODULE&quot;</span><span class="p">,</span> <span class="s2">&quot;config.settings&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We can test that our new links work by using <code>manage.py</code> from the terminal to run the project server.</p>
+<div class="highlight"><pre><span></span>$ python server/manage.py runserver
+
+Performing system checks...
+
+System check identified no issues <span class="o">(</span><span class="m">0</span> silenced<span class="o">)</span>.
+
+You have unapplied migrations<span class="p">;</span> your app may not work properly <span class="k">until</span> they are applied.
+Run <span class="s1">&#39;python manage.py migrate&#39;</span> to apply them.
+
+November 02, <span class="m">2015</span> - 20:36:56
+Django version 1.8, using settings <span class="s1">&#39;config.settings&#39;</span>
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+</pre></div>
+
+
+<p>Perfect!  Our project is now ready to support both server and client code.</p>
+<h2>Looking Forward</h2>
+<p>Our project is in a good spot to begin development!  Look for to the next post soon, covering database model definition, model migration to the underlying SQL backend and model object creation through the python Django ORM.</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/django/">django</a>, <a href="/tag/django-rest-framework/">django rest framework</a>, <a href="/tag/angularjs/">angularjs</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image tim-butler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Tim Butler</h3>
+<p class="well-content">I'm a Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">I specialize in Python backend development through Django and Django Rest Framework. Want to get in touch? Feel free to drop me an <a href="mailto:tim.butler@trackmaven.com">email</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

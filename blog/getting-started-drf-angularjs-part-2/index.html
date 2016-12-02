@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Getting Started with Django REST Framework (DRF) and AngularJS (Part 2) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Getting Started with Django REST Framework (DRF) and AngularJS (Part 2)</h2>
+  <p class="blog-post-meta single">Posted on <strong>January 11, 2016</strong> by <a href="http://engineroom.trackmaven.com/author/tim-butler/">Tim Butler</a><br>Category: <a href="/category/development/">Development</a> | <a href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-2/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p><strong>Read: <a href="/blog/getting-started-drf-angularjs-part-1/">Part 1 - Initial Project Setup</a></strong>
+<strong>Write: <a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-2">Part 2 Supplementary Code</a></strong></p>
+<p>This is the second post in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF in the server and AngularJS in the client.</p>
+<p>This post focuses on Django, with topics covering</p>
+<ul>
+<li><a href="#project-description">A Description of Our Series Project</a></li>
+<li><a href="#module-creation">Adding a new Project Module</a></li>
+<li><a href="#model-definition">Defining Database Models</a></li>
+<li><a href="#migrations">Migrating Database Models</a></li>
+<li><a href="#object-creation">Creating Model Data via the Django ORM</a></li>
+</ul>
+<p>We will be using Django <code>1.8.5</code> and Django Rest Framework <code>3.3.0</code>.  The base directory for our project is named <code>drf-sample</code>.</p>
+<p><a name="project-description"></a></p>
+<h2>A Description of Our Series Project</h2>
+<p>This post begins to outline code that we will be contributing to throughout this series.  You are welcome to create your own project following the ideas and strategies talked about here, but for the purpose of consistency within the series we will be making a single project and adding to it over time.</p>
+<p>Our project is an employee management system for retail chains.  We will need to keep track of multiple retail chains (their name, slogan, website, etc.), each store location within the chain (store number, opening date, address, etc.) and the employees within each store (employee number, name, starting date, etc.).  Each store location may be associated with only a single chain and each employee may work at only a single store at a time.</p>
+<p>Throughout the series, we will create an underlying database for our project, an API to access our data securely from external sources, and single-page app interface that reads and modifies the data.  Of course, these are very high-level requirements and the scope of this project will grow as the series continues!create</p>
+<p><a name="module-creation"></a></p>
+<h2>Adding a New Project Module</h2>
+<p>Before we begin coding, we need to create a new module within our project.  Since our project is geared toward retail management, we will name the module <code>retail</code>.</p>
+<p>To create a new module within our Django project, we need to:</p>
+<ul>
+<li>Create a new directory within the project structure</li>
+<li>Add the new directory to the list of Djangos installed applications.</li>
+</ul>
+<p>First, add the <code>server/retail/</code> directory to the project.</p>
+<div class="highlight"><pre><span></span>drf_sample/
+├── client
+└── server
+    ├── retail
+    │   └── __init__.py
+    ├── config
+    ├── __init__.py
+    ├── manage.py
+    └── urls.py
+</pre></div>
+
+
+<p><em>Note: Do not forget to create a <code>__init__.py</code> file inside the new directory.  It will not be recognized as a module without this file.</em></p>
+<p>Next, we need to ensure that our project knows that the new directory is meant to be an application module.  The <code>server/config/settings.py</code> file contains an <code>INSTALLED_APPS</code> setting which lists of all modules recognized by the project.  A module will only be recognized by the project if it has been included in this setting.  Add the <code>retail</code> module to <code>INSTALLED_APPS</code> by including the directory name in the list.</p>
+<div class="highlight"><pre><span></span><span class="n">INSTALLED_APPS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="s1">&#39;retail&#39;</span>
+<span class="p">)</span>
+</pre></div>
+
+
+<p>Django will now use the <code>retail</code> directory to associate code with the <code>retail</code> application module.</p>
+<p>Let's start coding the module!</p>
+<p><a name="model-definition"></a></p>
+<h2>Defining Database Models</h2>
+<p>Generally, the first step in coding a new module is to create a database schema for the module data using Django <code>Models</code>.  <code>Models</code> are classes that Django translates into an underlying relational database tables.  Have no fear; developers very rarely need to worry using SQL to interact with the database.  Instead, interactions with the tables are handled through the Django ORM (more on this later).</p>
+<p>For our module, we want to define three models:  <code>Chain</code> and <code>Store</code>, and <code>Employee</code>.  These models are fairly straight forward:</p>
+<ul>
+<li><code>Chain</code> represents a retail chain at a very high level (Target, for example).</li>
+<li><code>Store</code> represents a single store location of a <code>Chain</code> (a single Target location).</li>
+<li><code>Employee</code> represents an individual person working at a <code>Store</code> (John Doe, the cashier).</li>
+</ul>
+<p>To add <code>models</code> to the new module, create a <code>server/retail/models.py</code> file and add the following code.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">django.db</span> <span class="kn">import</span> <span class="n">models</span>
+<span class="kn">from</span> <span class="nn">django.utils</span> <span class="kn">import</span> <span class="n">timezone</span>
+<span class="kn">from</span> <span class="nn">django.core.validators</span> <span class="kn">import</span> <span class="n">MaxValueValidator</span><span class="p">,</span> <span class="n">MinValueValidator</span>
+
+
+<span class="k">class</span> <span class="nc">Chain</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; High-level retail chain model&quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">slogan</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+    <span class="n">founded_date</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+    <span class="n">website</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">URLField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Store</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Store location model.  Foreign key to Chain.&quot;&quot;&quot;</span>
+    <span class="n">chain</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Chain</span><span class="p">)</span>
+    <span class="n">number</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">address</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">opening_date</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+
+    <span class="c1"># Business hours in a 24 hour clock.  Default 8am-5pm.</span>
+    <span class="n">business_hours_start</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+        <span class="n">validators</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">MinValueValidator</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+            <span class="n">MaxValueValidator</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">business_hours_end</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">IntegerField</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">17</span><span class="p">,</span>
+        <span class="n">validators</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">MinValueValidator</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+            <span class="n">MaxValueValidator</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Employee</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Location employee model.  Foreign key to Store.&quot;&quot;&quot;</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Store</span><span class="p">)</span>
+    <span class="n">number</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">first_name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">last_name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">hired_date</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+</pre></div>
+
+
+<p>The above code may seem a bit complicated at first, so let's go through what it all means.</p>
+<p>Each <code>Model</code> class defines what will become a table in the underlying database and class attributes define columns within the associated table.  Each class attribute is as a <a href="https://docs.djangoproject.com/en/1.8/ref/models/fields/#field-types">Django Model field type</a> specifying the column data type along with optional type-specific parameters (such as the maximum length of a character field).  Field types correspond to common SQL column data types, including characters, integers, boolean fields, and date/times.</p>
+<p>The <code>ForeignKey</code> field type creates a one-to-many relationship between two models.  In the code above, the <code>Store</code> model contains a <code>ForeignKey</code> to the <code>Chain</code> model.  This means an instance of <code>Store</code> can be associated with a single <code>Chain</code> object, but a <code>Chain</code> can be associated with many <code>Stores</code>.  Likewise, an instance of <code>Employee</code> can be associated with a single <code>Store</code> object, but a <code>Store</code> may be associated with several <code>Employees</code>.</p>
+<p>It is best to keep table and column names relevant to the data they store, so make sure that your models and fields follow that same rule.</p>
+<p><a name="migrations"></a></p>
+<h2>Migrating Database Models</h2>
+<p>We have defined our Django <code>Models</code> to represent the database we want, but we have not used them to create the underlying database schema.  To create our database we will use Django <a href="https://docs.djangoproject.com/en/1.8/topics/migrations/">Migrations</a>.  Migrations are a way of synchronizing the database schema with the state of your project <code>Models</code>.</p>
+<p>To run the first project migration, run the following two commands from the project root directory:</p>
+<ul>
+<li><code>python server/manage.py makemigrations retail</code></li>
+<li><code>python server/manage.py migrate</code></li>
+</ul>
+<pre>
+drf-sample$ python server/manage.py makemigrations retail
+Migrations for 'retail':
+  <strong>0001_initial.py:
+    - Create model Chain
+    - Create model Employee
+    - Create model Store</strong>
+    - Add field store to employee
+</pre>
+
+<pre>
+drf-sample$ python server/manage.py migrate
+Operations to perform:
+  Synchronize unmigrated apps: staticfiles, messages
+  Apply all migrations: admin, contenttypes, retail, auth, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+  Installing custom SQL...
+Running migrations:
+  Rendering model states... DONE
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  <strong>Applying retail.0001_initial... OK</strong>
+  Applying sessions.0001_initial... OK
+</pre>
+
+<p><em>Note: For the purpose of this guide, do not worry about manually creating a database.  By default, Django creates a <code>db.sqlite3</code> file containing a local SQL DB to be used by the project.</em></p>
+<p>Excellent, let's go over the output from the commands.  During the first command, we can see that a migration file is created, <code>retail.0001_initial</code>, and three <code>models</code> were created in the file:</p>
+<ul>
+<li><code>Create model Chain</code></li>
+<li><code>Create model Employee</code></li>
+<li><code>Create model Store</code></li>
+</ul>
+<p>During the second command, the migration file is applied.  This means our tables have been created in the database!</p>
+<p>The output also shows a lot of other migrations.  Django requires a few models to run correctly.  Do not worry about these other migrations for now.  Just know that they are used internally by Django and for user permissions.</p>
+<p>That is all we need to do with our models for now!  Whenever a <code>retail</code> model changes, such as when a new field is added to a model, the above migration commands must be executed again to ensure that the underlying database is kept up to date with the updated model definition.</p>
+<p><em>Note: The <code>makemigrations</code> command creates a <code>migrations</code> directory in the <code>retail</code> module.  This new directory holds versioned migration files keeping track of all model changes over time.  The <code>migrate</code> command executes all migrations within the directory <strong>in order</strong> to ensure consistent results.</em></p>
+<p><a name="object-creation"></a></p>
+<h2>Creating Model Data via the Django ORM</h2>
+<p>Tables without data are not very interesting.  Let's take a moment to go over the Django ORM and add objects to our models.</p>
+<p>To interact with the Django ORM, we can use the Django shell.  The Django shell opens a Python interactive shell that sets the <code>DJANGO_SETTINGS_MODULE</code> environment variable allowing use of our <code>server/config/settings.py</code> file configurations.  Otherwise, the Django shell is everything you'd expect from a normal python shell.</p>
+<p>To open the Django shell, run the <code>python server/manage.py shell</code> command from the project root folder.</p>
+<div class="highlight"><pre><span></span>$ python server/manage.py shell
+Python 2.7.6 <span class="o">(</span>default, Jun <span class="m">22</span> 2015, 17:58:13<span class="o">)</span>
+<span class="o">[</span>GCC 4.8.2<span class="o">]</span> on linux2
+Type <span class="s2">&quot;help&quot;</span>, <span class="s2">&quot;copyright&quot;</span>, <span class="s2">&quot;credits&quot;</span> or <span class="s2">&quot;license&quot;</span> <span class="k">for</span> more information.
+<span class="o">(</span>InteractiveConsole<span class="o">)</span>
+&gt;&gt;&gt;
+</pre></div>
+
+
+<p>First, interact with the <code>Chain</code> model.  Import <code>Chain</code> and create an instance of the <code>Chain</code> model with all column values filled in.</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">retail.models</span> <span class="kn">import</span> <span class="n">Chain</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span> <span class="o">=</span> <span class="n">Chain</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Cafe Amazing&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Founded to serve the best sandwiches.&quot;</span><span class="p">,</span> <span class="n">slogan</span><span class="o">=</span><span class="s2">&quot;The best cafe in the USA!&quot;</span><span class="p">,</span> <span class="n">founded_date</span><span class="o">=</span><span class="s2">&quot;2014-12-04T20:55:17Z&quot;</span><span class="p">,</span> <span class="n">website</span><span class="o">=</span><span class="s2">&quot;http://www.thecafeamazing.com&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span>
+</pre></div>
+
+
+<p>Instantiating an object does not automatically save the object to the database.  A Django model must be explicitly saved before its data is committed.</p>
+<div class="highlight"><pre><span></span>&gt;&gt;&gt; chain.save()
+&gt;&gt;&gt;
+</pre></div>
+
+
+<p>Great!  Now we have created a <code>Chain</code> object and stored it in the database!  It's as easy as that.  We check that the object was created as expected by querying from the database using the Django database API.  From the Django shell, model objects can be queried using the format <code>&lt;model_class&gt;.objects.&lt;query_type&gt;</code>.  For example, to query for all <code>Chain</code> objects, we can use <code>Chain.objects.all()</code>.</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">Chain</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="p">[</span><span class="o">&lt;</span><span class="n">Chain</span><span class="p">:</span> <span class="n">Chain</span> <span class="nb">object</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="o">&gt;&gt;&gt;</span>
+</pre></div>
+
+
+<p>The result of <code>.all()</code> returns a list of all objects of the specified model type.  From the output, it looks likes we have a list of one object!  Let's make sure that object is what we previously saved.</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span> <span class="o">=</span> <span class="n">Chain</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># store the first object in the list of Chains</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span><span class="o">.</span><span class="n">id</span>
+<span class="mi">1</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span><span class="o">.</span><span class="n">name</span>
+<span class="s1">&#39;Cafe Amazing&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span><span class="o">.</span><span class="n">description</span>
+<span class="s1">&#39;Founded to serve the best sandwiches.&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span><span class="o">.</span><span class="n">slogan</span>
+<span class="s1">&#39;The best cafe in the USA!&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span><span class="o">.</span><span class="n">founded_date</span>
+<span class="s1">&#39;2014-12-04T20:55:17Z&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span><span class="o">.</span><span class="n">website</span>
+<span class="s1">&#39;http://www.thecafeamazing.com&#39;</span>
+<span class="o">&gt;&gt;&gt;</span>
+</pre></div>
+
+
+<p><em>Note: By default, Django applies an <code>ID</code> to the model object when saved to the database.  This becomes the primary key of the object within the model type.</em></p>
+<p>More on querying objects through the Django shell can be found in the <a href="https://docs.djangoproject.com/en/1.8/topics/db/queries/">Making Queries documentation</a>.</p>
+<p>Next, let's make a <code>Store</code> object that is a member of the <code>Chain</code> we previously created.  Remember that the <code>Store</code> model object needs a reference to a <code>Chain</code>, so we must pass it a saved <code>Chain</code> object.  We can use a <code>.get(name='Cafe Amazing')</code> query to retrieve the desired <code>Chain</code> object based on chain name.</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span> <span class="o">=</span> <span class="n">Chain</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Cafe Amazing&#39;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">retail.models</span> <span class="kn">import</span> <span class="n">Store</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">chain</span><span class="o">=</span><span class="n">chain</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="s2">&quot;AB019&quot;</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="s2">&quot;1234 French Quarter Terrace Columbia MD&quot;</span><span class="p">,</span> <span class="n">opening_date</span><span class="o">=</span><span class="s2">&quot;2015-12-04T22:55:17Z&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">store</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Store</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">number</span>
+<span class="s1">u&#39;AB019&#39;</span>
+<span class="o">&gt;&gt;&gt;</span>
+</pre></div>
+
+
+<p>Finally, let's make an Employee object.  Remember that we must provide it a saved <code>Store</code> reference and we can use a <code>.get(number='AB019')</code> query to retrieve the desired <code>Store</code> object based on store number.</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">number</span><span class="o">=</span><span class="s1">&#39;AB019&#39;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">retail.models</span> <span class="kn">import</span> <span class="n">Employee</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">employee</span> <span class="o">=</span> <span class="n">Employee</span><span class="p">(</span><span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="s2">&quot;026546&quot;</span><span class="p">,</span> <span class="n">first_name</span><span class="o">=</span><span class="s2">&quot;John&quot;</span><span class="p">,</span> <span class="n">last_name</span><span class="o">=</span><span class="s2">&quot;doe&quot;</span><span class="p">,</span> <span class="n">hired_date</span><span class="o">=</span><span class="s2">&quot;2015-12-04T00:00:00Z&quot;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">employee</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">Employee</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">number</span>
+<span class="s1">u&#39;026546&#39;</span>
+<span class="o">&gt;&gt;&gt;</span>
+</pre></div>
+
+
+<p>Look great!  We have now created three objects within our database.</p>
+<h2>Looking Forward</h2>
+<p>A lot was covered in this post so this is a great point to end on.  Look for the next post soon, covering API endpoint creation, including views, serializers, and URL routing for the <code>Retail</code> application.</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/django/">django</a>, <a href="/tag/django-rest-framework/">django rest framework</a>, <a href="/tag/angularjs/">angularjs</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image tim-butler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Tim Butler</h3>
+<p class="well-content">I'm a Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">I specialize in Python backend development through Django and Django Rest Framework. Want to get in touch? Feel free to drop me an <a href="mailto:tim.butler@trackmaven.com">email</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

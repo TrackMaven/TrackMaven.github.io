@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Monthly Challenge: Natural Language Processing - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Monthly Challenge: Natural Language Processing</h2>
+  <p class="blog-post-meta single">Posted on <strong>November 24, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/fletcher-heisler/">Fletcher Heisler</a><br>Category: <a href="/category/monthly-challenge/">Monthly Challenge</a> | <a href="http://engineroom.trackmaven.com/blog/monthly-challenge-natural-language-processing/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>Our topic for this month's <a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/">Monthly Challenge meetup</a> is NLP! In this post, we'll get you started with one possibility: using <a href="http://pandas.pydata.org/">pandas</a> and Python's <a href="http://www.nltk.org/">Natural Language Toolkit</a> to analyze the contents your own Gmail inbox. For those of you who are continuing projects from our last <a href="www.meetup.com/TrackMaven-Monthly-Challenge/events/213296342/">monthly challenge on Elasticsearch</a>, we'll also include some code to make use of <a href="http://www.elasticsearch.org/guide/en/elasticsearch/client/python-api/master/">Elasticsearch</a> as well at the end of the post.</p>
+<p>There are endless possibilities for an NLP-inspired project:</p>
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/Sentiment_analysis">Sentiment analysis</a> to put a measure to the emotional content of online reviews, social media, etc. For instance, are tweets about a topic trending to positive or negative opinions? Does a news site cover certain topics using more positive/negative terms or frequently use words correlated with certain emotions? Is this "positive" Yelp review sarcastic? (Good luck with that last one!)</li>
+<li>Analyze the use of language in literature to measure trends in vocabulary or writing style over time/regions/authors.</li>
+<li>Flag content as spam by identifying key characteristics of the language used.</li>
+<li>Use <a href="http://en.wikipedia.org/wiki/Topic_model">topic extraction</a> to group reviews into similar categories based on what main topics they cover.</li>
+<li>Create a better real-time Twitter search by combining Elasticsearch with <a href="http://wordnet.princeton.edu/">WordNet</a> via <a href="http://www.nltk.org/howto/wordnet.html">NLTK's corpus</a> to measure term similarity on Twitter's streaming API</li>
+<li>Join <a href="https://github.com/dariusk/NaNoGenMo-2014">NaNoGenMo</a> and write some code that generates its own novel! There are plenty of ideas and resources <a href="https://github.com/dariusk/NaNoGenMo-2014/issues/1">here</a> to get started.</li>
+</ul>
+<h2>Load a Gmail inbox into pandas</h2>
+<p>Let's get started with the example project! First off, we'll need some data. Prepare an archive of <em>only</em> your Gmail data (this will include what's currently in your spam and trash folders) here:</p>
+<p><a href="https://www.google.com/settings/takeout">https://www.google.com/settings/takeout</a></p>
+<p>Now go take a walk. With a 5.1G inbox, my 2.8G archive took a little over an hour to send.</p>
+<p>Once you've got the file and a local environment set up for the project, use the script below to read the data into pandas (I highly recommend using <a href="http://ipython.org/">IPython</a> for data analysis):</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mailbox</span> <span class="kn">import</span> <span class="n">mbox</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+
+<span class="k">def</span> <span class="nf">store_content</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">body</span><span class="p">:</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get_payload</span><span class="p">(</span><span class="n">decode</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;subject&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;subject&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="n">body</span><span class="p">,</span>
+            <span class="s2">&quot;from&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;from&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;to&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;X-Gmail-Labels&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;epilogue&quot;</span><span class="p">:</span> <span class="n">message</span><span class="o">.</span><span class="n">epilogue</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contents</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># Create an empty DataFrame with the relevant columns</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="s2">&quot;from&quot;</span><span class="p">,</span> <span class="s2">&quot;to&quot;</span><span class="p">,</span> <span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="s2">&quot;labels&quot;</span><span class="p">,</span> <span class="s2">&quot;epilogue&quot;</span><span class="p">))</span>
+
+<span class="c1"># Import your downloaded mbox file</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">mbox</span><span class="p">(</span><span class="s1">&#39;All mail Including Spam and Trash.mbox&#39;</span><span class="p">)</span>
+
+<span class="n">fails</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">box</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">get_content_type</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;text/plain&#39;</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">store_content</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span><span class="o">.</span><span class="n">is_multipart</span><span class="p">():</span>
+            <span class="c1"># Grab any plaintext from multipart messages</span>
+            <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get_payload</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">get_content_type</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;text/plain&#39;</span><span class="p">:</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="n">store_content</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">part</span><span class="o">.</span><span class="n">get_payload</span><span class="p">(</span><span class="n">decode</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+                    <span class="k">break</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">fails</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Above, we used Python's <a href="https://docs.python.org/2/library/mailbox.html">mailbox</a> module to read and parse "mbox"-formatted messages. This could certainly be done more elegantly (for instance, the messages include a lot of extraneous, duplicated data such as inline messages with "&gt;&gt;&gt;" in replies). Another issue is the inability to handle some special characters, which for simplicity we discard for now; check that you're not ignoring a significant proportion of your inbox here!</p>
+<p>Note that we're not actually going to make use of anything but the subject lines, but you could perform all sorts of interesting analysis on timestamps, message bodies, classify by tags, etc. Given that this is just a post to get you started (and happens to show results from my own inbox), I don't want to go into <em>too</em> much detail :)</p>
+<h2>Finding common terms</h2>
+<p>Now that we've got some data, let's get the ten most common terms out of all subject lines:</p>
+<div class="highlight"><pre><span></span><span class="c1"># Top 10 most common subject words</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="n">subject_word_bag</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="n">Counter</span><span class="p">(</span><span class="n">subject_word_bag</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">most_common</span><span class="p">()[:</span><span class="mi">10</span><span class="p">]</span>
+
+<span class="p">[(</span><span class="s1">&#39;re:&#39;</span><span class="p">,</span> <span class="mi">8508</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="mi">1188</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;the&#39;</span><span class="p">,</span> <span class="mi">819</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;fwd:&#39;</span><span class="p">,</span> <span class="mi">666</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;to&#39;</span><span class="p">,</span> <span class="mi">572</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="mi">530</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;your&#39;</span><span class="p">,</span> <span class="mi">528</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;for&#39;</span><span class="p">,</span> <span class="mi">498</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="mi">463</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;course&#39;</span><span class="p">,</span> <span class="mi">452</span><span class="p">)]</span>
+</pre></div>
+
+
+<p>Well, that was underwhelming. Let's try limiting out some common terms:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span>
+<span class="n">stops</span> <span class="o">=</span> <span class="p">[</span><span class="nb">unicode</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">stopwords</span><span class="o">.</span><span class="n">words</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;re:&#39;</span><span class="p">,</span> <span class="s1">&#39;fwd:&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">]</span>
+<span class="n">subject_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">subject_word_bag</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">if</span> <span class="n">word</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stops</span><span class="p">]</span>
+<span class="n">Counter</span><span class="p">(</span><span class="n">subject_words</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">()[:</span><span class="mi">10</span><span class="p">]</span>
+
+<span class="p">[(</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="mi">530</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;course&#39;</span><span class="p">,</span> <span class="mi">452</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;trackmaven&#39;</span><span class="p">,</span> <span class="mi">334</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;question&#39;</span><span class="p">,</span> <span class="mi">334</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="mi">286</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;content&#39;</span><span class="p">,</span> <span class="mi">245</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;payment&#39;</span><span class="p">,</span> <span class="mi">244</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;blog&#39;</span><span class="p">,</span> <span class="mi">241</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;forum&#39;</span><span class="p">,</span> <span class="mi">236</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="mi">220</span><span class="p">)]</span>
+</pre></div>
+
+
+<p>Besides removing a couple of the least useful terms on our own, we used NLTK's stopwords corpus, which first needs to be install in a <a href="http://www.nltk.org/data.html">rather goofy way</a>. Now we can see some words that are typical to my inbox but not necessarily as typical to find in English text in general!</p>
+<h2>Bigrams and collocations</h2>
+<p>Another interesting measurement allowed by NLTK is the concept of <a href="http://en.wikipedia.org/wiki/Collocation">collocations</a>. First, let's take a look at common "bigrams" - i.e, which sets of two words frequently appear together in pairs:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">nltk</span> <span class="kn">import</span> <span class="n">collocations</span>
+<span class="n">bigram_measures</span> <span class="o">=</span> <span class="n">collocations</span><span class="o">.</span><span class="n">BigramAssocMeasures</span><span class="p">()</span>
+<span class="n">bigram_finder</span> <span class="o">=</span> <span class="n">collocations</span><span class="o">.</span><span class="n">BigramCollocationFinder</span><span class="o">.</span><span class="n">from_words</span><span class="p">(</span><span class="n">subject_words</span><span class="p">)</span>
+
+<span class="c1"># Filter to top 20 results; otherwise this will take a LONG time to analyze</span>
+<span class="n">bigram_finder</span><span class="o">.</span><span class="n">apply_freq_filter</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">bigram</span> <span class="ow">in</span> <span class="n">bigram_finder</span><span class="o">.</span><span class="n">score_ngrams</span><span class="p">(</span><span class="n">bigram_measures</span><span class="o">.</span><span class="n">raw_freq</span><span class="p">)[:</span><span class="mi">10</span><span class="p">]:</span>
+    <span class="k">print</span> <span class="n">bigram</span>
+
+<span class="p">((</span><span class="s1">&#39;forum&#39;</span><span class="p">,</span> <span class="s1">&#39;content&#39;</span><span class="p">),</span> <span class="mf">0.005839453284373725</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;new&#39;</span><span class="p">,</span> <span class="s1">&#39;forum&#39;</span><span class="p">),</span> <span class="mf">0.005839453284373725</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;blog&#39;</span><span class="p">,</span> <span class="s1">&#39;post&#39;</span><span class="p">),</span> <span class="mf">0.00538045695634435</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;domain&#39;</span><span class="p">,</span> <span class="s1">&#39;names&#39;</span><span class="p">),</span> <span class="mf">0.004870461036311709</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;alpha&#39;</span><span class="p">,</span> <span class="s1">&#39;release&#39;</span><span class="p">),</span> <span class="mf">0.0028304773561811506</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="s1">&#39;widget.&#39;</span><span class="p">),</span> <span class="mf">0.0026519787841697267</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;purechat:&#39;</span><span class="p">,</span> <span class="s1">&#39;question&#39;</span><span class="p">),</span> <span class="mf">0.0026519787841697267</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;using&#39;</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">),</span> <span class="mf">0.0026519787841697267</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;release&#39;</span><span class="p">,</span> <span class="s1">&#39;third&#39;</span><span class="p">),</span> <span class="mf">0.002575479396164831</span><span class="p">)</span>
+<span class="p">((</span><span class="s1">&#39;trackmaven&#39;</span><span class="p">,</span> <span class="s1">&#39;application&#39;</span><span class="p">),</span> <span class="mf">0.002524479804161567</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We could repeat the same process for trigrams (or other ngrams) to find longer phrases; in this case, "new forum content" would appear as a top trigram, but in the case of the above list it ended up getting split into two pieces at the top of the bigram list.</p>
+<p>Another slightly different type of collocation measurement is based on <a href="http://en.wikipedia.org/wiki/Pointwise_mutual_information">pointwise mutual information</a>; essentially, this measures how likely one word is to appear given that we've seen the other word in a specific document <em>relative to</em> their general individual frequencies throughout all documents. For instance, if my email subjects use the word "blog" and/or the word "post" a lot in general, then the bigram "blog post" is not as interesting of a signal since it's still likely that one word might appear <em>not</em> paired with the other. Using this measure, we get a different set of bigrams:</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">bigram</span> <span class="ow">in</span> <span class="n">bigram_finder</span><span class="o">.</span><span class="n">nbest</span><span class="p">(</span><span class="n">bigram_measures</span><span class="o">.</span><span class="n">pmi</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">bigram</span>
+
+<span class="p">(</span><span class="s1">&#39;4:30pm&#39;</span><span class="p">,</span> <span class="s1">&#39;5pm&#39;</span><span class="p">)</span>
+<span class="p">(</span><span class="s1">&#39;motley&#39;</span><span class="p">,</span> <span class="s1">&#39;fool&#39;</span><span class="p">)</span>
+<span class="p">(</span><span class="s1">&#39;60,&#39;</span><span class="p">,</span> <span class="s1">&#39;900,&#39;</span><span class="p">)</span>
+<span class="p">(</span><span class="s1">&#39;population&#39;</span><span class="p">,</span> <span class="s1">&#39;cap&#39;</span><span class="p">)</span>
+<span class="p">(</span><span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;goods&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>So, I don't get a lot of email subjects mentioning the words "motley" or "fool" - but when I see either one, it's probably something "Motley Fool"-related!</p>
+<h2>Sentiment analysis</h2>
+<p>Finally, let's try out some sentiment analysis. For a quick start, we can use the <a href="http://textblob.readthedocs.org/en/dev/index.html">TextBlob</a> library, which sits on top of NLTK to provide simple access to lots of common NLP tasks. We can use its built-in <a href="http://textblob.readthedocs.org/en/dev/quickstart.html#sentiment-analysis">sentiment analysis</a> (which relies on <a href="http://www.clips.ua.ac.be/pages/pattern-en#sentiment">pattern</a>) to calculate the "polarity" of subject lines, from -1.0 for highly negative sentiment up to 1.0 for positive, with 0 being neutral (lack of a clear signal):</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">textblob</span> <span class="kn">import</span> <span class="n">TextBlob</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;feels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">TextBlob</span><span class="p">(</span><span class="nb">unicode</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">sentiment</span><span class="o">.</span><span class="n">polarity</span><span class="p">)</span>
+
+<span class="c1"># Output a few subject lines with their calculated sentiment scores</span>
+<span class="n">df</span><span class="p">[[</span><span class="s1">&#39;subject&#39;</span><span class="p">,</span> <span class="s1">&#39;feels&#39;</span><span class="p">]]</span>
+
+<span class="mi">0</span>                                      <span class="n">Fw</span><span class="p">:</span> <span class="n">this</span> <span class="ow">and</span> <span class="n">that</span>    <span class="mf">0.00000</span>
+<span class="mi">1</span>                                             <span class="n">Fw</span><span class="p">:</span> <span class="n">Review</span>    <span class="mf">0.00000</span>
+<span class="mi">2</span>                          <span class="n">Re</span><span class="p">:</span> <span class="n">Thanks</span> <span class="k">for</span> <span class="n">your</span> <span class="n">purchase</span><span class="err">!</span>       <span class="mf">0.25</span>
+<span class="mi">3</span>            <span class="n">Re</span><span class="p">:</span> <span class="n">Monte</span> <span class="n">Carlo</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">little</span> <span class="n">bit</span> <span class="n">confusing</span> <span class="err">!</span>   <span class="o">-</span><span class="mf">0.28125</span>
+<span class="o">...</span>
+<span class="mi">19481</span>                              <span class="n">Re</span><span class="p">:</span> <span class="n">Great</span> <span class="n">to</span> <span class="n">see</span> <span class="n">you</span><span class="err">!</span>     <span class="mf">1.0000</span>
+<span class="mi">19482</span>                                            <span class="n">Re</span><span class="p">:</span> <span class="n">API</span>       <span class="mf">0.00</span>
+<span class="mi">19483</span>                                           <span class="n">Question</span>       <span class="mf">0.00</span>
+<span class="mi">19484</span>                              <span class="n">Re</span><span class="p">:</span> <span class="n">HAPPY</span> <span class="n">BIRTHDAY</span><span class="err">!!!</span>    <span class="mf">1.00000</span>
+</pre></div>
+
+
+<h2>Using Elasticsearch</h2>
+<p>If you need a primer on using Elasticsearch in Python, check out our previous <a href="http://engineroom.trackmaven.com/blog/first-monthly-challenge-elasticsearch/">monthly challenge blog post</a> to get started. If you've already got a similar project going or want to try analyzing your mail in Elasticsearch, you can run the following (while your ES instance is running) to index your inbox:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mailbox</span> <span class="kn">import</span> <span class="n">mbox</span>
+<span class="kn">from</span> <span class="nn">elasticsearch</span> <span class="kn">import</span> <span class="n">Elasticsearch</span>
+
+<span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;_timestamp&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;date&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;E, d MMM yyyy HH:mm:ss Z&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;subject&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;from&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;date&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;E, d MMM yyyy HH:mm:ss Z&quot;</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;epilogue&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">es</span> <span class="o">=</span> <span class="n">Elasticsearch</span><span class="p">()</span>
+<span class="n">es</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;gmail&quot;</span><span class="p">)</span>
+
+<span class="c1"># When re-running with modifications, you&#39;ll need to remove the current index:</span>
+<span class="c1"># es.indices.delete_mapping(index=&quot;gmail&quot;, doc_type=&quot;message&quot;)</span>
+<span class="n">es</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">put_mapping</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;gmail&quot;</span><span class="p">,</span> <span class="n">doc_type</span><span class="o">=</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">mapping</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">store_content</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">body</span><span class="p">:</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get_payload</span><span class="p">(</span><span class="n">decode</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;subject&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;subject&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="n">body</span><span class="p">,</span>
+            <span class="s2">&quot;from&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;from&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;to&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;to&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;X-Gmail-Labels&#39;</span><span class="p">],</span>
+            <span class="s2">&quot;epilogue&quot;</span><span class="p">:</span> <span class="n">message</span><span class="o">.</span><span class="n">epilogue</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">es</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;gmail&quot;</span><span class="p">,</span> <span class="n">doc_type</span><span class="o">=</span><span class="s1">&#39;message&#39;</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">contents</span><span class="p">)</span>
+
+<span class="n">fails</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">mbox</span><span class="p">(</span><span class="s1">&#39;All mail Including Spam and Trash.mbox&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">box</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">get_content_type</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;text/plain&#39;</span><span class="p">:</span>
+            <span class="n">store_content</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span><span class="o">.</span><span class="n">is_multipart</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get_payload</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">get_content_type</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;text/plain&#39;</span><span class="p">:</span>
+                    <span class="n">store_content</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">part</span><span class="o">.</span><span class="n">get_payload</span><span class="p">(</span><span class="n">decode</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
+                    <span class="k">break</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">fails</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We can then quickly repeat a few of our pandas analyses in an Elasticsearch-friendly way. For instance, let's get the most common terms out of all subject lines:</p>
+<div class="highlight"><pre><span></span>curl -XPOST &#39;http://localhost:9200/gmail/_search?pretty=true&amp;search_type=count&#39; -d&#39;
+{
+    &quot;aggregations&quot;: {
+        &quot;most_popular_term&quot;: {
+            &quot;terms&quot;: {
+                &quot;field&quot;: &quot;body&quot;, 
+                &quot;size&quot;: 15,
+                &quot;stopwords&quot;: [&quot;the&quot;, &quot;and&quot;]
+            }
+        }
+    }
+}&#39;
+</pre></div>
+
+
+<p>As before, the results are less than stunning by default:</p>
+<div class="highlight"><pre><span></span>{
+  &quot;took&quot; : 54,
+  &quot;timed_out&quot; : false,
+  &quot;_shards&quot; : {
+    &quot;total&quot; : 5,
+    &quot;successful&quot; : 5,
+    &quot;failed&quot; : 0
+  },
+  &quot;hits&quot; : {
+    &quot;total&quot; : 17466,
+    &quot;max_score&quot; : 0.0,
+    &quot;hits&quot; : [ ]
+  },
+  &quot;aggregations&quot; : {
+    &quot;most_popular_term&quot; : {
+      &quot;buckets&quot; : [ {
+        &quot;key&quot; : &quot;the&quot;,
+        &quot;doc_count&quot; : 15330
+      }, {
+        &quot;key&quot; : &quot;to&quot;,
+        &quot;doc_count&quot; : 15310
+      }, {
+        &quot;key&quot; : &quot;and&quot;,
+        &quot;doc_count&quot; : 14303
+      }, {
+        &quot;key&quot; : &quot;you&quot;,
+        &quot;doc_count&quot; : 14254
+      }, {
+        &quot;key&quot; : &quot;for&quot;,
+        &quot;doc_count&quot; : 14081
+      }, {
+        &quot;key&quot; : &quot;a&quot;,
+        &quot;doc_count&quot; : 13751
+      }, {
+        &quot;key&quot; : &quot;of&quot;,
+        &quot;doc_count&quot; : 12552
+      }, {
+        &quot;key&quot; : &quot;is&quot;,
+        &quot;doc_count&quot; : 11864
+      }, {
+        &quot;key&quot; : &quot;on&quot;,
+        &quot;doc_count&quot; : 11091
+      }, {
+        &quot;key&quot; : &quot;i&quot;,
+        &quot;doc_count&quot; : 10766
+      }, {
+        &quot;key&quot; : &quot;at&quot;,
+        &quot;doc_count&quot; : 10653
+      }, {
+        &quot;key&quot; : &quot;fletcher&quot;,
+        &quot;doc_count&quot; : 10571
+      }, {
+        &quot;key&quot; : &quot;your&quot;,
+        &quot;doc_count&quot; : 10468
+      }, {
+        &quot;key&quot; : &quot;in&quot;,
+        &quot;doc_count&quot; : 10343
+      }, {
+        &quot;key&quot; : &quot;if&quot;,
+        &quot;doc_count&quot; : 10293
+      } ]
+    }
+  }
+}
+</pre></div>
+
+
+<p>We could in this case configure a <a href="http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/custom-analyzers.html">custom analyzer</a> that uses the <a href="http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/using-stopwords.html">stopwords token filter</a>. Of course, the same TextBlob/NLTK analyses could be used directly on Elasticsearch-indexed content just as well.</p>
+<p>Next steps: analyze your inbox over time; see if you can classify messages to determine sender/label/spam based attributes of the body text; use <a href="http://en.wikipedia.org/wiki/Latent_semantic_indexing">latent semantic indexing</a> to uncover the most common general topics covered; feed your sent folder into a Markov model combined with some part-of-speech tagging to generate seemingly coherent auto-replies...</p>
+<p>Please <a href="mailto:engineroom@trackmaven.com">let us know</a> if you try out any interesting side projects using NLP - bonus points if you include an open-source repo. You can see previous presentations at <a href="http://challenge.hackpad.com">challenge.hackpad.com</a> for more inspiration!</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/nlp/">nlp</a>, <a href="/tag/elasticsearch/">elasticsearch</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image fletcher-heisler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Fletcher Heisler</h3>
+<p class="well-content">I am the VP of Engineering at <a href="http://trackmaven.com/">TrackMaven</a> and founder of <a href="https://realpython.com/">Real Python</a>.</p>
+<p class="well-content">You can follow me on <a href="https://twitter.com/fheisler">Twitter</a> and find a few of my open-source projects on <a href="https://github.com/fheisler">GitHub</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

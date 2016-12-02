@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Announcing Celery Once - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Announcing Celery Once</h2>
+  <p class="blog-post-meta single">Posted on <strong>February 03, 2015</strong> by <a href="http://engineroom.trackmaven.com/author/cameron-maske/">Cameron Maske</a><br>Category: <a href="/category/development/">Development</a> | <a href="http://engineroom.trackmaven.com/blog/announcing-celery-once/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>At TrackMaven we are big users of <a href="http://www.celeryproject.org/">Celery</a>, an asynchronous task queue written in Python. Today we're happy to release a useful package we have been using internally called <a href="https://pypi.python.org/pypi/celery_once/">Celery Once!</a></p>
+<p>Celery Once allows you to specify and run unique tasks across your distributed Celery cluster. It can be used to prevent workers performing the same task when scheduled multiple times.</p>
+<h2>Example usage</h2>
+<p>Imagine the scenario of generating and send a PDF report to a user.
+On our web app, a user could kick off this task by submitting a form to a web server, which then triggers our Celery task.</p>
+<p>If generating the report is slow and our user hits submit multiple times, we don't want to queue up additional repeated tasks that end up spamming the user's inbox.</p>
+<p>Here is how we could solve the scenario using Celery Once!
+After <a href="https://github.com/TrackMaven/celery-once#usage">setting up</a> <code>celery</code> with <code>celery_once</code> installed, we can write a mutually exclusive task, like so...</p>
+<div class="highlight"><pre><span></span><span class="c1"># tasks.py</span>
+<span class="kn">import</span> <span class="nn">celery</span>
+<span class="kn">from</span> <span class="nn">reports</span> <span class="kn">import</span> <span class="n">generate_report</span>
+<span class="kn">from</span> <span class="nn">celery_once</span> <span class="kn">import</span> <span class="n">QueueOnce</span>
+
+<span class="nd">@celery.task</span><span class="p">(</span><span class="n">base</span><span class="o">=</span><span class="n">QueueOnce</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">send_pdf_report</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
+    <span class="n">report</span> <span class="o">=</span> <span class="n">generate_report</span><span class="p">()</span>
+    <span class="n">report</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Behind the scenes, <code>QueueOnce</code> uses <a href="http://redis.io">Redis</a> to <a href="https://github.com/TrackMaven/celery-once/blob/c7b8902a52ee727e4e68392887d905f1e436f7ef/celery_once/tasks.py#L98">check against or set a lock</a> based on the task's name and its arguments.</p>
+<p>If we try to run the same task, while it's already queued, an <code>AlreadyQueued</code> exception is raised.</p>
+<div class="highlight"><pre><span></span><span class="c1"># Run the initial task, not yet queued up...</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">send_pdf_report</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">)</span>
+<span class="c1"># Duplicate task run before previous one completes..</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">send_pdf_report</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">)</span>
+<span class="n">Traceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+    <span class="o">..</span>
+<span class="n">AlreadyQueued</span><span class="p">()</span>
+<span class="c1"># Running for a different user has its own lock</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">send_pdf_report</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="s2">&quot;bob@example.com&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>That's Celery Once in a nutshell! More documentation on how to install, set up and tweak it to your needs can be found <a href="https://github.com/TrackMaven/celery-once">here</a>.</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/celery/">celery</a>, <a href="/tag/redis/">redis</a>, <a href="/tag/open-source/">open source</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image cameron-maske-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Cameron Maske</h3>
+<p class="well-content">I am the Lead Architect Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Check out my open source efforts on <a href="https://github.com/cameronmaske">Github</a>. Want to get in touch? Feel free to drop me an <a href="mailto:cam@trackmaven.com">email</a> or <a href="http://twitter.com/cameronmaske">tweet</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

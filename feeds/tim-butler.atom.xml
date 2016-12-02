@@ -1,0 +1,843 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>The Engine Room - TrackMaven</title><link href="http://engineroom.trackmaven.com/" rel="alternate"></link><link href="http://engineroom.trackmaven.com/feeds/tim-butler.atom.xml" rel="self"></link><id>http://engineroom.trackmaven.com/</id><updated>2016-11-29T00:00:00+01:00</updated><entry><title>Getting Started with Django REST Framework (DRF) and AngularJS (Part 4)</title><link href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-4/" rel="alternate"></link><published>2016-11-29T00:00:00+01:00</published><updated>2016-11-29T00:00:00+01:00</updated><author><name>Tim Butler</name></author><id>tag:engineroom.trackmaven.com,2016-11-29:blog/getting-started-drf-angularjs-part-4/</id><summary type="html">&lt;p&gt;This is the fourth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Read Previous Posts:&lt;/strong&gt; &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-1/"&gt;Part 1 - Initial Project Setup&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-2/"&gt;Part 2 - Django Models and the ORM&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-3/"&gt;Part 3 - Serializers, views, and API routes&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Write:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-4"&gt;Part 4 Supplementary Code&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr /&gt;
+&lt;p&gt;This post focuses on getting started with AngularJS, with topics covering&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#introduction"&gt;A Recap and an Introduction to AngularJS&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#setup"&gt;Client Project Setup&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#nodeserver"&gt;The Node Server&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#angularsetup"&gt;Angular Application Setup&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#results"&gt;The First Page&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This guide uses &lt;a href="https://github.com/angular/angular.js"&gt;AngularJS&lt;/a&gt; &lt;code&gt;1.5.7&lt;/code&gt; and &lt;a href="https://github.com/angular-ui/ui-router"&gt;Angular UI Router&lt;/a&gt; &lt;code&gt;0.3.1&lt;/code&gt;.  Further, this guide assumes you have &lt;a href="https://nodejs.org/en/"&gt;Node.js&lt;/a&gt; and &lt;a href="https://www.npmjs.com/"&gt;npm&lt;/a&gt; installed on your system.&lt;/p&gt;
+&lt;p&gt;&lt;a name="introduction"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;A Recap and an Introduction to AngularJS&lt;/h2&gt;
+&lt;p&gt;Last we met, we finished the API for the Retail module of our Django backend application.  The Retail module contains information about store chains, individual store locations, and employees working within each store.  The API provides access to each of these resources in a RESTful manner.&lt;/p&gt;
+&lt;p&gt;Our project goal is to create a frontend application that can be deployed separately from the backend application.  Now that we have an API defined and working, we can start working on the AngularJS client that will utilize the API!  AngularJS is a front-end framework that provides two-way data binding between HTML and Javascript to dynamically display data.  It allows us to clearly define application components and tie the components to the HTML templates.&lt;/p&gt;
+&lt;p&gt;Our Angular application will run on a Node server.  The Node server will be a very simple application that serves the Angular application to the user and that is all.  Angular will take care of the URL routing so that it may act as a &lt;a href="https://en.wikipedia.org/wiki/Single-page_application"&gt;single page application&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a name="setup"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Client Project Setup&lt;/h2&gt;
+&lt;p&gt;First thing's first - we need to setup our client application that will house both the code for the Node server and the code for the Angular application.  To start, create the following directory structure within  &lt;code&gt;drf-sample&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf_sample/
+├── client/
+│   ├── bower.json
+│   ├── index.html
+│   ├── package.json
+│   ├── public/
+│   │   ├── app.js
+│   │   ├── appRoutes.js
+│   │   └── components/
+└── └── server.js
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This structure contains a a lot, so it is worthwhile to go over the main function of each part as we setup our client project.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;package.json&lt;/code&gt; - Specifies overall project dependencies&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;bower.json&lt;/code&gt; - Specifies AngularJS dependencies&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;index.html&lt;/code&gt; - Acts as the entry point for our Angular application&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;server.js&lt;/code&gt; - Serves the Angular application to the user&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;public/app.js&lt;/code&gt; - Defines all modules associated with the Angular application&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;public/appRoutes.js&lt;/code&gt; - Defines how a user can reach each application module&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;public/components/&lt;/code&gt; - Hold the source code for application module&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;To setup the project, we need to define and install our project dependencies.  First, configure &lt;code&gt;package.json&lt;/code&gt; to download &lt;code&gt;express&lt;/code&gt; for our Node server and &lt;code&gt;bower&lt;/code&gt; so we can install our Angular dependencies.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;package.json&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;drf-sample-client&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;description&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;A sample Angular application&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;dependencies&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;express&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;^4.13.4&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;bower&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;1.7.9&amp;quot;&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Note:&lt;/em&gt; There are a number of fields possible in &lt;code&gt;package.json&lt;/code&gt; left out of this example.  The &lt;a href="https://docs.npmjs.com/files/package.json"&gt;package.json documentation&lt;/a&gt; does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download &lt;code&gt;express&lt;/code&gt; and &lt;code&gt;bower&lt;/code&gt;.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;Since we already have &lt;code&gt;npm&lt;/code&gt; installed, we can install all of our project dependencies.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;client$ &lt;span class="nb"&gt;cd&lt;/span&gt; client/
+drf-sample/client$ npm install
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;node_modules&lt;/code&gt; is created within the client directory and contains the contents of both installed packages.  Now that we have &lt;a href="https://bower.io/"&gt;bower&lt;/a&gt; downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in &lt;code&gt;bower.json&lt;/code&gt;.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;bower.json&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;drf-sample-client&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;description&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;A sample Angular application&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;quot;dependencies&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;angular&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;^1.5.7&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;angular-ui-router&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;^0.3.1&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;angular-bootstrap&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;^1.3.3&amp;quot;&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Note:&lt;/em&gt; There are a number of fields possible in &lt;code&gt;bower.json&lt;/code&gt; left out of this example.  The &lt;a href="https://github.com/bower/spec/blob/master/json.md"&gt;bower.json documentation&lt;/a&gt; does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download &lt;code&gt;angular&lt;/code&gt;, &lt;code&gt;angular-ui-router&lt;/code&gt;, and &lt;code&gt;angular-bootstrap&lt;/code&gt;.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;Next, install the dependencies using bower.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf-sample/client$ bower install --config.interactive&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;false&lt;/span&gt; --allow-root
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;bower_components&lt;/code&gt; is created within the client directory and contains the contents of the installed angular components.&lt;/p&gt;
+&lt;p&gt;It's that easy!  We have downloaded all of our required dependencies, so now we can start coding our frontend server.&lt;/p&gt;
+&lt;p&gt;&lt;a name="nodeserver"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;The Node Server&lt;/h2&gt;
+&lt;p&gt;The Node server is a very simple application that serves our Angular application to users.  We will be using &lt;a href="https://expressjs.com/"&gt;&lt;code&gt;express&lt;/code&gt;&lt;/a&gt;, a minimalist web framework, to specify a directory and port for which to serve the application.  To start, edit the &lt;code&gt;server.js&lt;/code&gt; file to contain the server code:&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;server.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;var express = require(&amp;#39;express&amp;#39;);
+var server = express();
+server.use(express.static(__dirname));
+
+var port = process.env.PORT || 8081;
+server.listen(port);
+console.log(&amp;#39;Use port &amp;#39; + port + &amp;#39; to connect to this server&amp;#39;);
+
+exports = module.exports = server;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;hr /&gt;
+&lt;p&gt;This code creates a new &lt;code&gt;express&lt;/code&gt; instance, defines the directory to look for as the entry point (in our case it's the current directory), defines a port to run the server on, and exports the &lt;code&gt;express&lt;/code&gt; instance so that we can access it from outside the file.  With this setup we can run the server using the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf-sample/client$ node server.js 
+Use port 8081 to connect to this server
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Unfortunately, if you visit &lt;code&gt;localhost:8081&lt;/code&gt; you will see a blank page.  There isn't anything to serve until the Angular application is created.&lt;/p&gt;
+&lt;p&gt;&lt;a name="angularsetup"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Angular Application Setup&lt;/h2&gt;
+&lt;p&gt;This is where things get a bit more complex.  The structure of AngularJS applications isn't necessarily difficult, but there are a few individual parts that come together to make the whole.  &lt;/p&gt;
+&lt;p&gt;AngularJS applications are made up of modules.  These modules are encapsulated pieces of code that perform specific functions within the application.  We will be building a component for our Retail application.  Eventually, this module will query for Retail information from the Retail API and display information about retailers.  For the purpose of this post, however, we will just be printing the standard "Hello World" to the page to prove that the application has been created correctly.  &lt;/p&gt;
+&lt;p&gt;First, define the Angular Retail module.  Add the following retail module files to the components directory:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;components/
+└── retail/
+    ├── controllers/
+    │   └── retail.control.js
+    ├── services/
+    └── templates/
+        └── retail.template
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Angular modules can typically be split into three main parts: controllers, services, and templates.  Templates contain the HTML code shown to the user.  Controllers are JS files that define dynamic content displayed by the templates through &lt;code&gt;$scope&lt;/code&gt; variables.  Services are helper JS files typically used to define classes, contact external APIs, etc.&lt;/p&gt;
+&lt;h3&gt;Full Application Definition&lt;/h3&gt;
+&lt;p&gt;Since Angular applications are just a combination of modules, there are a few modules that we need to define.  First, the &lt;code&gt;retail&lt;/code&gt; module will hold all controller, service, and template code that involves the Retail API.  Then we need to define the main application module that uses &lt;code&gt;retail&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Alter &lt;code&gt;app.js&lt;/code&gt; with the following:&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;app.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;use strict&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="kd"&gt;var&lt;/span&gt; &lt;span class="nx"&gt;retail&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;angular&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;module&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;retail&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[]);&lt;/span&gt;
+
+&lt;span class="nx"&gt;angular&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;module&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;SampleApplication&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s1"&gt;&amp;#39;appRoutes&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s1"&gt;&amp;#39;retail&amp;#39;&lt;/span&gt;
+    &lt;span class="p"&gt;]);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;hr /&gt;
+&lt;p&gt;Here we created an angular module named &lt;code&gt;retail&lt;/code&gt;.  Nothing is defined as part of this module yet, but having the module available will come in handy later.  Second, the &lt;code&gt;SampleApplication&lt;/code&gt; module is created.  This will act as the main module that brings together all other modules within the application.  &lt;code&gt;appRoutes&lt;/code&gt; and &lt;code&gt;retail&lt;/code&gt; are dependencies for &lt;code&gt;SampleApplication&lt;/code&gt;.  Don't worry about &lt;code&gt;appRoutes&lt;/code&gt; for now, we will get to that later.  Let's start on the &lt;code&gt;retail&lt;/code&gt; module.&lt;/p&gt;
+&lt;h3&gt;Controllers and Templates&lt;/h3&gt;
+&lt;p&gt;As a first pass, the &lt;code&gt;retail&lt;/code&gt; module will have two parts: a controller and a template.  This is a good place to start since they are so directly connected.  Modify the &lt;code&gt;retail&lt;/code&gt; controller and template files with the following:&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;retail.control.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;retail&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;controller&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;RetailController&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;$scope&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;message&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Hello World&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}]);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;retail.template&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;ng-controller&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;RetailController&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        {{ message }}
+    &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;hr /&gt;
+&lt;p&gt;So, what is going on here?  By using &lt;code&gt;retail.controller&lt;/code&gt; we are stating that this controller is defined as part of the &lt;code&gt;retail&lt;/code&gt; module from &lt;code&gt;app.js&lt;/code&gt;.  The controller is given the name "RetailController".  &lt;code&gt;$scope&lt;/code&gt; is injected into the controller so the controller has access to it.  Think of &lt;code&gt;$scope&lt;/code&gt; as a link that connects templates to controllers.  Any vairables defined on &lt;code&gt;$scope&lt;/code&gt; in the controller can be used by corresponding templates and vice versa.  The &lt;code&gt;$scope.message&lt;/code&gt; variable is defined within the controller.  Any template using "RetailController" can view and alter the &lt;code&gt;message&lt;/code&gt; variable.&lt;/p&gt;
+&lt;p&gt;The template defines a &lt;code&gt;div&lt;/code&gt; with the &lt;code&gt;ng-controller&lt;/code&gt; directive pointing to "RetailController".  You can read more about directives &lt;a href="https://docs.angularjs.org/guide/directive"&gt;here&lt;/a&gt;.  This provides the template use of "RetailController" and the &lt;code&gt;message&lt;/code&gt; variable.  By placing &lt;code&gt;message&lt;/code&gt; in &lt;code&gt;{{ }}&lt;/code&gt; tags, the template displays text stored by the variable instead of a static string.  Whenever the &lt;code&gt;$scope.message&lt;/code&gt; variable changes in the controller it will render on the template automatically thanks to variable binding!&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;Note:&lt;/em&gt; Notice we don't have to specify &lt;code&gt;$scope&lt;/code&gt; when using variables in the template.  Any variables used in a template will automatically be assumed to be on &lt;code&gt;$scope&lt;/code&gt;.  &lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;Great!  We have our basic &lt;code&gt;retail&lt;/code&gt; control module defined, but we still need a way for the user to access it.  &lt;/p&gt;
+&lt;h3&gt;Application Routing&lt;/h3&gt;
+&lt;p&gt;This is where &lt;code&gt;appRoutes.js&lt;/code&gt; comes into play.  &lt;code&gt;appRoutes.js&lt;/code&gt; defines states of the Angular application based on the URL the user visits.  When the user visits a new URL, &lt;code&gt;appRoutes&lt;/code&gt; determines the template and controller that should be used by that URL.  Alter &lt;code&gt;appRoutes.js&lt;/code&gt; with the following:&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;appRoutes.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;angular&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;module&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;appRoutes&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;ui.router&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;config&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;$stateProvider&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;$urlRouterProvider&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;$stateProvider&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;$urlRouterProvider&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+
+    &lt;span class="nx"&gt;$stateProvider&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;state&lt;/span&gt;&lt;span class="p"&gt;({&lt;/span&gt;
+        &lt;span class="nx"&gt;name&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;retail&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nx"&gt;url&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;/&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nx"&gt;templateUrl&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;public/components/retail/templates/retail.template&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nx"&gt;controller&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;RetailController&amp;#39;&lt;/span&gt;
+    &lt;span class="p"&gt;});&lt;/span&gt;
+
+    &lt;span class="nx"&gt;$urlRouterProvider&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;otherwise&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;/&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}]);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;hr /&gt;
+&lt;p&gt;Here, another module is defined: &lt;code&gt;appRoutes&lt;/code&gt; .  This module has a dependency on &lt;code&gt;ui.router&lt;/code&gt; so that we can use &lt;a href="https://github.com/angular-ui/ui-router/wiki"&gt;&lt;code&gt;$stateProvider&lt;/code&gt;&lt;/a&gt; to alter application states.&lt;/p&gt;
+&lt;p&gt;One state is defined in &lt;code&gt;appRoutes&lt;/code&gt;: "retail".  When users visit the base URL for our application, &lt;code&gt;/&lt;/code&gt;, we want them to see the Retail control module using the retail template and controller.  &lt;/p&gt;
+&lt;p&gt;Further, &lt;code&gt;appRoutes&lt;/code&gt; states that users should be redirected to &lt;code&gt;/&lt;/code&gt; when they visit a URL that has not explicitly defined.  &lt;/p&gt;
+&lt;p&gt;&lt;a name="results"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;The First Page&lt;/h2&gt;
+&lt;p&gt;Remember &lt;code&gt;index.html&lt;/code&gt;? Well that file in the entry point to the Angular application.  Add the following code to &lt;code&gt;index.html&lt;/code&gt;.&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;&lt;em&gt;index.html&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="cp"&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;html&lt;/span&gt; &lt;span class="na"&gt;ng-app&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;SampleApplication&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;head&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;meta&lt;/span&gt; &lt;span class="na"&gt;charset&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;utf-8&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;title&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;Angular Sample - Retail Application&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;title&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+
+        &lt;span class="c"&gt;&amp;lt;!--  Angular Setup --&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;bower_components/angular/angular.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;bower_components/angular-ui-router/release/angular-ui-router.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+
+        &lt;span class="c"&gt;&amp;lt;!-- Application Setup --&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;public/appRoutes.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;public/app.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+
+        &lt;span class="c"&gt;&amp;lt;!--  Controllers --&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;public/components/retail/controllers/retail.control.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;head&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;body&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class="c"&gt;&amp;lt;!-- The dynamic templates will be served within this div --&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;ui-view&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;ui-view&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;body&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;html&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;hr /&gt;
+&lt;p&gt;At heart &lt;code&gt;index.html&lt;/code&gt; is just the beginning to a standard page, but there are a few key differences.  First, the &lt;code&gt;ng-app&lt;/code&gt; directive is used to specify that &lt;code&gt;SampleApplication&lt;/code&gt; will be the angular application for this page.  Next, there are multiple &lt;code&gt;script&lt;/code&gt; elements to import everything we need for the application.  It's important to import all non-template parts of the application here, including the &lt;code&gt;angular.js&lt;/code&gt; and &lt;code&gt;angular-ui-router.js&lt;/code&gt; packages from bower.&lt;/p&gt;
+&lt;p&gt;Lastly, the &lt;code&gt;ui-view&lt;/code&gt; directive is being used to dynamically place our application states into the page.  When the user changes URLs within our page &lt;code&gt;appRoutes&lt;/code&gt; determines which module is should be rendered and displays it in place of &lt;code&gt;ui-view&lt;/code&gt;.  This, in essence, is how the single page application works.  Views are dynamically determined by the Angular router.&lt;/p&gt;
+&lt;p&gt;That's it!  If we run &lt;code&gt;node server.js&lt;/code&gt; then we can visit the page that we created!&lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img alt="map3" src="/images/sample-app-hello.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;h2&gt;Looking Forward&lt;/h2&gt;
+&lt;p&gt;We now have a fully functional AngularJS application.  It's simple, yes, but it lays the foundation for the rest of the application.  Next time we can start utilizing the Retail API and displaying the API results for the user! &lt;/p&gt;</summary><category term="django"></category><category term="django rest framework"></category><category term="angularjs"></category></entry><entry><title>Getting Started with Django REST Framework (DRF) and AngularJS (Part 3)</title><link href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-3/" rel="alternate"></link><published>2016-05-05T00:00:00+02:00</published><updated>2016-05-05T00:00:00+02:00</updated><author><name>Tim Butler</name></author><id>tag:engineroom.trackmaven.com,2016-05-05:blog/getting-started-drf-angularjs-part-3/</id><summary type="html">&lt;p&gt;&lt;strong&gt;Read: &lt;a href="/blog/getting-started-drf-angularjs-part-1/"&gt;Part 1 - Initial Project Setup&lt;/a&gt;&lt;/strong&gt; and &lt;a href="/blog/getting-started-drf-angularjs-part-2/"&gt;Part 2 - Django Models and the ORM&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Write: &lt;a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-3"&gt;Part 3 Supplementary Code&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;This is the third installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF in the server and AngularJS in the client.&lt;/p&gt;
+&lt;p&gt;This post focuses on the basics of Django REST Framework (DRF), with topics covering&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#about"&gt;A Recap and Introduction&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#serializers"&gt;Serializers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#views"&gt;Views&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#routing"&gt;URL Routing&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#api"&gt;Using the API&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This guide uses Django &lt;code&gt;1.8.5&lt;/code&gt; and Django Rest Framework &lt;code&gt;3.3.0&lt;/code&gt;.  The base directory for our project is named &lt;code&gt;drf-sample&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a name="about"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;A Recap and Introduction&lt;/h2&gt;
+&lt;p&gt;Last we met, we setup a &lt;code&gt;Retail&lt;/code&gt; module, created models for the module, setup the module database, and explored the ORM to create an initial set of objects in the database.  While it's great to have our database setup, we don't have a way to access the data from outside of our application. &lt;/p&gt;
+&lt;p&gt;Our project goal is to create a client application that is deployed separately from the server application.  For this to work, we need to define an API on the server for the client to interact with.  Django REST Framework (DRF) provides us with the tools to make the API.  &lt;/p&gt;
+&lt;p&gt;&lt;em&gt;At a high level, we can think of our server application as a house.  Django is the house itself and all the various furniture inside the house.  Normally, only those inside the house are able to see how the house is furnished.  However, DRF provides a windows and doors for the house.  With DRF, outsiders can look inside the house and add or remove furniture.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;While DRF can become quite extensive, this post will focus on the basics in terms of a single goal: expose our Django models to external services via an API.  We need to define three things:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Serializers&lt;/code&gt; to specify how the database objects are formatted when accessed from the API&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Views&lt;/code&gt; to specify which operations can be performed on models through the API&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Routes&lt;/code&gt; to specify the URLs to access each of the database models through the API&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;By the end of this post, we will be able to send API requests to the &lt;code&gt;Retail&lt;/code&gt; application and retrieve our previously created data objects.  &lt;/p&gt;
+&lt;p&gt;&lt;a name="serializers"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Defining Serializers&lt;/h2&gt;
+&lt;p&gt;A serializer translates objects into different formats.  From the &lt;a href="http://www.django-rest-framework.org/api-guide/serializers/"&gt;DRF serializer documentation&lt;/a&gt;: &lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Serializers allow complex data such as querysets and model instances to be converted to native Python datatypes that can then be easily rendered into JSON, XML or other content types. Serializers also provide deserialization, allowing parsed data to be converted back into complex types, after first validating the incoming data.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Imagine the &lt;code&gt;Store&lt;/code&gt; model.  It contains the &lt;code&gt;opening_date&lt;/code&gt; field, a &lt;code&gt;DateTimeField&lt;/code&gt;.  In the underlying database the field is stored in a database date field depending on the database chosen, but that format may not always be human-readible.  Instead, when a user views a date they want an ISO formatted date string in the vein of &lt;code&gt;2014-12-04T20:55:17Z&lt;/code&gt;.  Serializers aid in this translation.&lt;/p&gt;
+&lt;p&gt;We need a serializer for each of our three models: &lt;code&gt;Chain&lt;/code&gt;, &lt;code&gt;Store&lt;/code&gt;, and &lt;code&gt;Employee&lt;/code&gt;.  Add the &lt;code&gt;server/retail/serializers.py&lt;/code&gt; file to the project.  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf_sample/
+├── client
+└── server
+    ├── config
+    ├── manage.py
+    └── retail
+        ├── __init__.py
+        ├── migrations
+        ├── models.py
+        ├── serializers.py
+        └── views.py
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Add the following code to &lt;code&gt;serializers.py&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;rest_framework&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;serializers&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.models&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Employee&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;ChainSerializer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;serializers&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ModelSerializer&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; Serializer to represent the Chain model &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Meta&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;model&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;
+        &lt;span class="n"&gt;fields&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;description&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;slogan&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;founded_date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;website&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;StoreSerializer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;serializers&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ModelSerializer&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; Serializer to represent the Store model &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Meta&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;model&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;
+        &lt;span class="n"&gt;fields&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;chain&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;number&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;address&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;opening_date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;business_hours_start&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;business_hours_end&amp;quot;&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;EmployeeSerializer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;serializers&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ModelSerializer&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; Serializer to represent the Employee model &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Meta&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;model&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Employee&lt;/span&gt;
+        &lt;span class="n"&gt;fields&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;store&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;number&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;first_name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;last_name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;hired_date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The above code defines three &lt;code&gt;ModelSerializers&lt;/code&gt;, a class associated directly with an existing Django model.  The &lt;code&gt;ModelSerializer&lt;/code&gt; &lt;code&gt;Meta&lt;/code&gt; class allows us to specify the model we wish to associate with the serializer and the model fields the serializer may access.&lt;/p&gt;
+&lt;p&gt;For our server, we will be utilizing these serializers through API &lt;code&gt;views&lt;/code&gt;, defined later, and no further work is needed.  DRF recognizes the field types from the associated models and is can translate our models into dictionaries.  &lt;/p&gt;
+&lt;p&gt;Serializers can be used in contexts outside of views.  To provide a better perspective into how a serializer transforms an object, let's use the shell to serialize a model object.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;drf&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;sample&lt;/span&gt;&lt;span class="err"&gt;$&lt;/span&gt; &lt;span class="n"&gt;python&lt;/span&gt; &lt;span class="n"&gt;server&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;manage&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;py&lt;/span&gt; &lt;span class="n"&gt;shell&lt;/span&gt;
+
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.models&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.serializers&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;ChainSerializer&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;first&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ChainSerializer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;website&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;u&amp;#39;http://www.thecafeamazing.com&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;founded_date&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;u&amp;#39;2014-12-04T20:55:17Z&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;slogan&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;u&amp;#39;The best cafe in the USA!&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;name&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;u&amp;#39;Cafe Amazing&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;description&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;u&amp;#39;Founded to serve the best sandwiches.&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Once we instantiate a serializer with a model object (in this case a &lt;code&gt;Chain&lt;/code&gt; object), the &lt;code&gt;data&lt;/code&gt; attribute of the serializer contains a dictionary version of the object.  Extending the above example, we can modify the dictionary and update the database object.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;slogan&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;The best cafe in the Mississippi!&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ChainSerializer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_valid&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;new_chain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;serializer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;save&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;new_chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;slogan&lt;/span&gt;
+&lt;span class="s1"&gt;u&amp;#39;The best cafe in the Mississippi!&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We instantiated the serializer with an existing object and the new dictionary representation of the object.  &lt;code&gt;is_valid&lt;/code&gt; determines whether or not the data dictionary can be correctly formatted into the database fields for the model.  If it can, we can perform a &lt;code&gt;save&lt;/code&gt; to update the model object based the new data.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Note:  The &lt;code&gt;is_valid&lt;/code&gt; check must be performed before a &lt;code&gt;save&lt;/code&gt; can be executed.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;For the purposes of this post, all of these functions will be performed by interactions between our &lt;code&gt;serializers&lt;/code&gt; and our &lt;code&gt;views&lt;/code&gt;.  We are not responsible for explicitly serializing objects.  Phew!&lt;/p&gt;
+&lt;p&gt;&lt;a name="views"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Defining Views&lt;/h2&gt;
+&lt;p&gt;We need to define how our application can be interacted with through our API. Whether it be a query to a single model object or adding a new object, views define these interactions.&lt;/p&gt;
+&lt;p&gt;A view controls all operations an external entity may perform on our model objects through the API.  These operations are usually referred to as &lt;code&gt;CRUD&lt;/code&gt; operations corresponding to&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Create&lt;/code&gt;: Add a new, distinct object to the database&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Retrieve&lt;/code&gt;: Query a list of objects or a single object from the database&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Update&lt;/code&gt;: Edit an existing object in the database&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Delete&lt;/code&gt;: Remove an existing object from the database&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Views also provide other functions, including, but not limited to&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Authentication: identifies the credentials that a request is made with&lt;/li&gt;
+&lt;li&gt;Permissioning: determines if a request is allowed&lt;/li&gt;
+&lt;li&gt;Filtering: filters object results based on specified parameters&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The advanced functions of a view will be covered in later posts.&lt;/p&gt;
+&lt;p&gt;To start working on our &lt;code&gt;Retail&lt;/code&gt; views, add the &lt;code&gt;server/retail/views.py&lt;/code&gt; file to the project.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf_sample/
+├── client
+└── server
+    ├── config
+    ├── manage.py
+    └── retail
+        ├── __init__.py
+        ├── migrations
+        ├── models.py
+        ├── serializers.py
+        └── views.py
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Add the following code to &lt;code&gt;views.py&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;rest_framework&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;viewsets&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.models&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Employee&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.serializers&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;ChainSerializer&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;StoreSerializer&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;EmployeeSerializer&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;ChainViewSet&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;viewsets&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ModelViewSet&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; ViewSet for viewing and editing Chain objects &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="n"&gt;queryset&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;serializer_class&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ChainSerializer&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;StoreViewSet&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;viewsets&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ModelViewSet&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; ViewSet for viewing and editing Store objects &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="n"&gt;queryset&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;serializer_class&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;StoreSerializer&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;EmployeeViewSet&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;viewsets&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ModelViewSet&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; ViewSet for viewing and editing Employee objects &amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="n"&gt;queryset&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Employee&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;serializer_class&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;EmployeeSerializer&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The above code defines three &lt;code&gt;ModelViewSets&lt;/code&gt;, a class that comes pre-packaged with all &lt;code&gt;CRUD&lt;/code&gt; operations and connects directly to an existing model.  The &lt;code&gt;queryset&lt;/code&gt; attribute specifies a very basic query that acts as the base set of objects the view has access to.  Our views are allowed access to all of their model objects.  The &lt;code&gt;serializer_class&lt;/code&gt; attribute specifies which serializer will be used to format individual objects within the &lt;code&gt;queryset&lt;/code&gt; when requests are made.&lt;/p&gt;
+&lt;p&gt;In the example above, each &lt;code&gt;ViewSet&lt;/code&gt; utilizes to its like-named model types:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;ChainViewSet&lt;/code&gt; uses a queryset for the &lt;code&gt;Chain&lt;/code&gt; model (&lt;code&gt;Chain.objects.all()&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;StoreViewSet&lt;/code&gt; uses a queryset for the &lt;code&gt;Store&lt;/code&gt; model (&lt;code&gt;Store.objects.all()&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;EmployeeViewSet&lt;/code&gt; uses a queryset for the &lt;code&gt;Employee&lt;/code&gt; model (&lt;code&gt;Employee.objects.all()&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Likewise, each &lt;code&gt;ViewSet&lt;/code&gt; utilizes to its like-named serializer:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;ChainViewSet&lt;/code&gt; uses the &lt;code&gt;ChainSerializer&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;StoreViewSet&lt;/code&gt; uses the &lt;code&gt;StoreSerializer&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;EmployeeViewSet&lt;/code&gt; uses the &lt;code&gt;EmployeeSerializer&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Very simply put, the &lt;code&gt;ChainViewSet&lt;/code&gt; allows all &lt;code&gt;CRUD&lt;/code&gt; operations to be performed on all &lt;code&gt;Chain&lt;/code&gt; objects, and so on.  &lt;/p&gt;
+&lt;p&gt;&lt;a name="routing"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Defining URL Routes&lt;/h2&gt;
+&lt;p&gt;We have the views in place to allow &lt;code&gt;CRUD&lt;/code&gt; operations on our models, but we haven't defined how to access those operations through the API.  This is where routes come in.&lt;/p&gt;
+&lt;p&gt;Routes define Uniform Resource Identifiers (URIs) that can be accessed through the API.  External services can interact with these URIs to communicate with our application and perform operations on our model objects.&lt;/p&gt;
+&lt;p&gt;We need to define a Route for each model type.  We already have a &lt;code&gt;server/urls.py&lt;/code&gt; file in our project in anticipation of our routes.  Add the following code to that file.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;rest_framework.routers&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;DefaultRouter&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.views&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;ChainViewSet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;StoreViewSet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;EmployeeViewSet&lt;/span&gt;
+
+&lt;span class="n"&gt;router&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;DefaultRouter&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;register&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;prefix&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;chains&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;viewset&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;ChainViewSet&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;register&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;prefix&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;stores&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;viewset&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;StoreViewSet&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;register&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;prefix&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;employees&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;viewset&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;EmployeeViewSet&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;urlpatterns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;urls&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The code above defines a DRF &lt;code&gt;DefaultRouter&lt;/code&gt; and registers a URI for each of our Models along with the view that the URI provides access to.  &lt;code&gt;Chain&lt;/code&gt; objects will be accessible via the &lt;code&gt;chains&lt;/code&gt; URI, &lt;code&gt;Store&lt;/code&gt; objects will be accessible via the &lt;code&gt;stores&lt;/code&gt; URI, and &lt;code&gt;Employee&lt;/code&gt; objects will be accessible through the &lt;code&gt;employees&lt;/code&gt; URI.  More on how to access those in the following section.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;settings.py&lt;/code&gt; points to the &lt;code&gt;urls.py&lt;/code&gt; file (via the &lt;code&gt;ROOT_URLCONF&lt;/code&gt; setting).  Django expects to find a &lt;code&gt;urlpatterns&lt;/code&gt; variable here specifying all the registered URIs that can be accessed through the API, so we added all of our registered URIs to that list.  &lt;/p&gt;
+&lt;p&gt;&lt;a name="api"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Using the API&lt;/h2&gt;
+&lt;p&gt;We now have all the pieces in place to access our server database through the API.  Cool, but what does it mean and how do we do it?  Once we run the server, we can query our server database with an API request tool by appending &lt;code&gt;/chains/&lt;/code&gt;, &lt;code&gt;/stores/&lt;/code&gt; or &lt;code&gt;/employees/&lt;/code&gt; to the base application server URL (&lt;code&gt;localhost:8000 by default&lt;/code&gt;) to access our models!&lt;/p&gt;
+&lt;p&gt;Let's start the application:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf-sample$ python server/manage.py runserver
+Performing system checks...
+
+System check identified no issues (0 silenced).
+April 27, 2016 - 17:42:21
+Django version 1.8, using settings &amp;#39;config.settings&amp;#39;
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;With the server running we can use an API request tool, such as &lt;a href="https://curl.haxx.se/"&gt;cURL&lt;/a&gt;, to run queries on our server database.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf-sample$ curl -g localhost:8000/chains/
+[{&amp;quot;name&amp;quot;:&amp;quot;Cafe Amazing&amp;quot;,&amp;quot;description&amp;quot;:&amp;quot;Founded to serve the best sandwiches.&amp;quot;,&amp;quot;slogan&amp;quot;:&amp;quot;The best cafe in the Mississippi!&amp;quot;,&amp;quot;founded_date&amp;quot;:&amp;quot;2014-12-04T20:55:17Z&amp;quot;,&amp;quot;website&amp;quot;:&amp;quot;http://www.thecafeamazing.com&amp;quot;}]
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Note: cURL usage is beyond the scope of this post, but documentation can be found around the internet.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;The result is a list of dictionaries with a single item representing our &lt;code&gt;Chain&lt;/code&gt; object defined previously!&lt;/p&gt;
+&lt;p&gt;Let's try querying for &lt;code&gt;Store&lt;/code&gt; and &lt;code&gt;Employee&lt;/code&gt; objects.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf-sample$ curl -g localhost:8000/stores/
+[{&amp;quot;chain&amp;quot;:1,&amp;quot;number&amp;quot;:&amp;quot;AB019&amp;quot;,&amp;quot;address&amp;quot;:&amp;quot;1234 French Quarter Terrace Columbia MD&amp;quot;,&amp;quot;opening_date&amp;quot;:&amp;quot;2015-12-04T22:55:17Z&amp;quot;,&amp;quot;business_hours_start&amp;quot;:8,&amp;quot;business_hours_end&amp;quot;:17}]
+
+drf-sample$ curl -g localhost:8000/employees/
+[{&amp;quot;store&amp;quot;:1,&amp;quot;number&amp;quot;:&amp;quot;026546&amp;quot;,&amp;quot;first_name&amp;quot;:&amp;quot;John&amp;quot;,&amp;quot;last_name&amp;quot;:&amp;quot;doe&amp;quot;,&amp;quot;hired_date&amp;quot;:&amp;quot;2015-12-04T00:00:00Z&amp;quot;}]
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Great, the API works!  The above commands only perform &lt;code&gt;GET&lt;/code&gt; requests, but our &lt;code&gt;ViewSet&lt;/code&gt; definitions are defined in a way to allow all operations for anyone accessing our server.  Permission filters can be added the &lt;code&gt;ViewSets&lt;/code&gt; to allow only certain users to the server or specify only specific operations, but that will be covered in another post.&lt;/p&gt;
+&lt;h2&gt;Looking Forward&lt;/h2&gt;
+&lt;p&gt;We got an API up and working for the server!  The next post will cover the basics of AngularJS and how to connect the client code to the server.&lt;/p&gt;</summary><category term="django"></category><category term="django rest framework"></category><category term="angularjs"></category></entry><entry><title>Getting Started with Django REST Framework (DRF) and AngularJS (Part 2)</title><link href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-2/" rel="alternate"></link><published>2016-01-11T00:00:00+01:00</published><updated>2016-01-11T00:00:00+01:00</updated><author><name>Tim Butler</name></author><id>tag:engineroom.trackmaven.com,2016-01-11:blog/getting-started-drf-angularjs-part-2/</id><summary type="html">&lt;p&gt;&lt;strong&gt;Read: &lt;a href="/blog/getting-started-drf-angularjs-part-1/"&gt;Part 1 - Initial Project Setup&lt;/a&gt;&lt;/strong&gt;
+&lt;strong&gt;Write: &lt;a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-2"&gt;Part 2 Supplementary Code&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;This is the second post in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF in the server and AngularJS in the client.&lt;/p&gt;
+&lt;p&gt;This post focuses on Django, with topics covering&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#project-description"&gt;A Description of Our Series Project&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#module-creation"&gt;Adding a new Project Module&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#model-definition"&gt;Defining Database Models&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#migrations"&gt;Migrating Database Models&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#object-creation"&gt;Creating Model Data via the Django ORM&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;We will be using Django &lt;code&gt;1.8.5&lt;/code&gt; and Django Rest Framework &lt;code&gt;3.3.0&lt;/code&gt;.  The base directory for our project is named &lt;code&gt;drf-sample&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a name="project-description"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;A Description of Our Series Project&lt;/h2&gt;
+&lt;p&gt;This post begins to outline code that we will be contributing to throughout this series.  You are welcome to create your own project following the ideas and strategies talked about here, but for the purpose of consistency within the series we will be making a single project and adding to it over time.&lt;/p&gt;
+&lt;p&gt;Our project is an employee management system for retail chains.  We will need to keep track of multiple retail chains (their name, slogan, website, etc.), each store location within the chain (store number, opening date, address, etc.) and the employees within each store (employee number, name, starting date, etc.).  Each store location may be associated with only a single chain and each employee may work at only a single store at a time.&lt;/p&gt;
+&lt;p&gt;Throughout the series, we will create an underlying database for our project, an API to access our data securely from external sources, and single-page app interface that reads and modifies the data.  Of course, these are very high-level requirements and the scope of this project will grow as the series continues!create&lt;/p&gt;
+&lt;p&gt;&lt;a name="module-creation"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Adding a New Project Module&lt;/h2&gt;
+&lt;p&gt;Before we begin coding, we need to create a new module within our project.  Since our project is geared toward retail management, we will name the module &lt;code&gt;retail&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;To create a new module within our Django project, we need to:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Create a new directory within the project structure&lt;/li&gt;
+&lt;li&gt;Add the new directory to the list of Djangos installed applications.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;First, add the &lt;code&gt;server/retail/&lt;/code&gt; directory to the project.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf_sample/
+├── client
+└── server
+    ├── retail
+    │   └── __init__.py
+    ├── config
+    ├── __init__.py
+    ├── manage.py
+    └── urls.py
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Note: Do not forget to create a &lt;code&gt;__init__.py&lt;/code&gt; file inside the new directory.  It will not be recognized as a module without this file.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Next, we need to ensure that our project knows that the new directory is meant to be an application module.  The &lt;code&gt;server/config/settings.py&lt;/code&gt; file contains an &lt;code&gt;INSTALLED_APPS&lt;/code&gt; setting which lists of all modules recognized by the project.  A module will only be recognized by the project if it has been included in this setting.  Add the &lt;code&gt;retail&lt;/code&gt; module to &lt;code&gt;INSTALLED_APPS&lt;/code&gt; by including the directory name in the list.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;INSTALLED_APPS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s1"&gt;&amp;#39;retail&amp;#39;&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Django will now use the &lt;code&gt;retail&lt;/code&gt; directory to associate code with the &lt;code&gt;retail&lt;/code&gt; application module.&lt;/p&gt;
+&lt;p&gt;Let's start coding the module!&lt;/p&gt;
+&lt;p&gt;&lt;a name="model-definition"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Defining Database Models&lt;/h2&gt;
+&lt;p&gt;Generally, the first step in coding a new module is to create a database schema for the module data using Django &lt;code&gt;Models&lt;/code&gt;.  &lt;code&gt;Models&lt;/code&gt; are classes that Django translates into an underlying relational database tables.  Have no fear; developers very rarely need to worry using SQL to interact with the database.  Instead, interactions with the tables are handled through the Django ORM (more on this later).&lt;/p&gt;
+&lt;p&gt;For our module, we want to define three models:  &lt;code&gt;Chain&lt;/code&gt; and &lt;code&gt;Store&lt;/code&gt;, and &lt;code&gt;Employee&lt;/code&gt;.  These models are fairly straight forward:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Chain&lt;/code&gt; represents a retail chain at a very high level (Target, for example).&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Store&lt;/code&gt; represents a single store location of a &lt;code&gt;Chain&lt;/code&gt; (a single Target location).&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Employee&lt;/code&gt; represents an individual person working at a &lt;code&gt;Store&lt;/code&gt; (John Doe, the cashier).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;To add &lt;code&gt;models&lt;/code&gt; to the new module, create a &lt;code&gt;server/retail/models.py&lt;/code&gt; file and add the following code.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;django.db&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;django.utils&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;timezone&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;django.core.validators&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;MaxValueValidator&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MinValueValidator&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Model&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; High-level retail chain model&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;description&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;slogan&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;founded_date&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;website&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;URLField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Store&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Model&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; Store location model.  Foreign key to Chain.&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="n"&gt;chain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ForeignKey&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;20&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;address&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;opening_date&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DateTimeField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;timezone&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;now&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Business hours in a 24 hour clock.  Default 8am-5pm.&lt;/span&gt;
+    &lt;span class="n"&gt;business_hours_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;IntegerField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;validators&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+            &lt;span class="n"&gt;MinValueValidator&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+            &lt;span class="n"&gt;MaxValueValidator&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;23&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;business_hours_end&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;IntegerField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;17&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;validators&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+            &lt;span class="n"&gt;MinValueValidator&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+            &lt;span class="n"&gt;MaxValueValidator&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;23&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Employee&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Model&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;&amp;quot;&amp;quot;&amp;quot; Location employee model.  Foreign key to Store.&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+    &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ForeignKey&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Store&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;20&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;first_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;last_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CharField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;max_length&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;hired_date&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;models&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DateTimeField&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;timezone&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;now&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The above code may seem a bit complicated at first, so let's go through what it all means.&lt;/p&gt;
+&lt;p&gt;Each &lt;code&gt;Model&lt;/code&gt; class defines what will become a table in the underlying database and class attributes define columns within the associated table.  Each class attribute is as a &lt;a href="https://docs.djangoproject.com/en/1.8/ref/models/fields/#field-types"&gt;Django Model field type&lt;/a&gt; specifying the column data type along with optional type-specific parameters (such as the maximum length of a character field).  Field types correspond to common SQL column data types, including characters, integers, boolean fields, and date/times.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;ForeignKey&lt;/code&gt; field type creates a one-to-many relationship between two models.  In the code above, the &lt;code&gt;Store&lt;/code&gt; model contains a &lt;code&gt;ForeignKey&lt;/code&gt; to the &lt;code&gt;Chain&lt;/code&gt; model.  This means an instance of &lt;code&gt;Store&lt;/code&gt; can be associated with a single &lt;code&gt;Chain&lt;/code&gt; object, but a &lt;code&gt;Chain&lt;/code&gt; can be associated with many &lt;code&gt;Stores&lt;/code&gt;.  Likewise, an instance of &lt;code&gt;Employee&lt;/code&gt; can be associated with a single &lt;code&gt;Store&lt;/code&gt; object, but a &lt;code&gt;Store&lt;/code&gt; may be associated with several &lt;code&gt;Employees&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;It is best to keep table and column names relevant to the data they store, so make sure that your models and fields follow that same rule.&lt;/p&gt;
+&lt;p&gt;&lt;a name="migrations"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Migrating Database Models&lt;/h2&gt;
+&lt;p&gt;We have defined our Django &lt;code&gt;Models&lt;/code&gt; to represent the database we want, but we have not used them to create the underlying database schema.  To create our database we will use Django &lt;a href="https://docs.djangoproject.com/en/1.8/topics/migrations/"&gt;Migrations&lt;/a&gt;.  Migrations are a way of synchronizing the database schema with the state of your project &lt;code&gt;Models&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;To run the first project migration, run the following two commands from the project root directory:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;python server/manage.py makemigrations retail&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;python server/manage.py migrate&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;
+drf-sample$ python server/manage.py makemigrations retail
+Migrations for 'retail':
+  &lt;strong&gt;0001_initial.py:
+    - Create model Chain
+    - Create model Employee
+    - Create model Store&lt;/strong&gt;
+    - Add field store to employee
+&lt;/pre&gt;
+
+&lt;pre&gt;
+drf-sample$ python server/manage.py migrate
+Operations to perform:
+  Synchronize unmigrated apps: staticfiles, messages
+  Apply all migrations: admin, contenttypes, retail, auth, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+  Installing custom SQL...
+Running migrations:
+  Rendering model states... DONE
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  &lt;strong&gt;Applying retail.0001_initial... OK&lt;/strong&gt;
+  Applying sessions.0001_initial... OK
+&lt;/pre&gt;
+
+&lt;p&gt;&lt;em&gt;Note: For the purpose of this guide, do not worry about manually creating a database.  By default, Django creates a &lt;code&gt;db.sqlite3&lt;/code&gt; file containing a local SQL DB to be used by the project.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Excellent, let's go over the output from the commands.  During the first command, we can see that a migration file is created, &lt;code&gt;retail.0001_initial&lt;/code&gt;, and three &lt;code&gt;models&lt;/code&gt; were created in the file:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Create model Chain&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Create model Employee&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Create model Store&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;During the second command, the migration file is applied.  This means our tables have been created in the database!&lt;/p&gt;
+&lt;p&gt;The output also shows a lot of other migrations.  Django requires a few models to run correctly.  Do not worry about these other migrations for now.  Just know that they are used internally by Django and for user permissions.&lt;/p&gt;
+&lt;p&gt;That is all we need to do with our models for now!  Whenever a &lt;code&gt;retail&lt;/code&gt; model changes, such as when a new field is added to a model, the above migration commands must be executed again to ensure that the underlying database is kept up to date with the updated model definition.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Note: The &lt;code&gt;makemigrations&lt;/code&gt; command creates a &lt;code&gt;migrations&lt;/code&gt; directory in the &lt;code&gt;retail&lt;/code&gt; module.  This new directory holds versioned migration files keeping track of all model changes over time.  The &lt;code&gt;migrate&lt;/code&gt; command executes all migrations within the directory &lt;strong&gt;in order&lt;/strong&gt; to ensure consistent results.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a name="object-creation"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Creating Model Data via the Django ORM&lt;/h2&gt;
+&lt;p&gt;Tables without data are not very interesting.  Let's take a moment to go over the Django ORM and add objects to our models.&lt;/p&gt;
+&lt;p&gt;To interact with the Django ORM, we can use the Django shell.  The Django shell opens a Python interactive shell that sets the &lt;code&gt;DJANGO_SETTINGS_MODULE&lt;/code&gt; environment variable allowing use of our &lt;code&gt;server/config/settings.py&lt;/code&gt; file configurations.  Otherwise, the Django shell is everything you'd expect from a normal python shell.&lt;/p&gt;
+&lt;p&gt;To open the Django shell, run the &lt;code&gt;python server/manage.py shell&lt;/code&gt; command from the project root folder.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ python server/manage.py shell
+Python 2.7.6 &lt;span class="o"&gt;(&lt;/span&gt;default, Jun &lt;span class="m"&gt;22&lt;/span&gt; 2015, 17:58:13&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;[&lt;/span&gt;GCC 4.8.2&lt;span class="o"&gt;]&lt;/span&gt; on linux2
+Type &lt;span class="s2"&gt;&amp;quot;help&amp;quot;&lt;/span&gt;, &lt;span class="s2"&gt;&amp;quot;copyright&amp;quot;&lt;/span&gt;, &lt;span class="s2"&gt;&amp;quot;credits&amp;quot;&lt;/span&gt; or &lt;span class="s2"&gt;&amp;quot;license&amp;quot;&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; more information.
+&lt;span class="o"&gt;(&lt;/span&gt;InteractiveConsole&lt;span class="o"&gt;)&lt;/span&gt;
+&amp;gt;&amp;gt;&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;First, interact with the &lt;code&gt;Chain&lt;/code&gt; model.  Import &lt;code&gt;Chain&lt;/code&gt; and create an instance of the &lt;code&gt;Chain&lt;/code&gt; model with all column values filled in.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.models&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Cafe Amazing&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;description&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Founded to serve the best sandwiches.&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;slogan&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;The best cafe in the USA!&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;founded_date&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;2014-12-04T20:55:17Z&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;website&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;http://www.thecafeamazing.com&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Instantiating an object does not automatically save the object to the database.  A Django model must be explicitly saved before its data is committed.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&amp;gt;&amp;gt;&amp;gt; chain.save()
+&amp;gt;&amp;gt;&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Great!  Now we have created a &lt;code&gt;Chain&lt;/code&gt; object and stored it in the database!  It's as easy as that.  We check that the object was created as expected by querying from the database using the Django database API.  From the Django shell, model objects can be queried using the format &lt;code&gt;&amp;lt;model_class&amp;gt;.objects.&amp;lt;query_type&amp;gt;&lt;/code&gt;.  For example, to query for all &lt;code&gt;Chain&lt;/code&gt; objects, we can use &lt;code&gt;Chain.objects.all()&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt; &lt;span class="nb"&gt;object&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The result of &lt;code&gt;.all()&lt;/code&gt; returns a list of all objects of the specified model type.  From the output, it looks likes we have a list of one object!  Let's make sure that object is what we previously saved.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;  &lt;span class="c1"&gt;# store the first object in the list of Chains&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;
+&lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;
+&lt;span class="s1"&gt;&amp;#39;Cafe Amazing&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;description&lt;/span&gt;
+&lt;span class="s1"&gt;&amp;#39;Founded to serve the best sandwiches.&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;slogan&lt;/span&gt;
+&lt;span class="s1"&gt;&amp;#39;The best cafe in the USA!&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;founded_date&lt;/span&gt;
+&lt;span class="s1"&gt;&amp;#39;2014-12-04T20:55:17Z&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;website&lt;/span&gt;
+&lt;span class="s1"&gt;&amp;#39;http://www.thecafeamazing.com&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Note: By default, Django applies an &lt;code&gt;ID&lt;/code&gt; to the model object when saved to the database.  This becomes the primary key of the object within the model type.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;More on querying objects through the Django shell can be found in the &lt;a href="https://docs.djangoproject.com/en/1.8/topics/db/queries/"&gt;Making Queries documentation&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Next, let's make a &lt;code&gt;Store&lt;/code&gt; object that is a member of the &lt;code&gt;Chain&lt;/code&gt; we previously created.  Remember that the &lt;code&gt;Store&lt;/code&gt; model object needs a reference to a &lt;code&gt;Chain&lt;/code&gt;, so we must pass it a saved &lt;code&gt;Chain&lt;/code&gt; object.  We can use a &lt;code&gt;.get(name='Cafe Amazing')&lt;/code&gt; query to retrieve the desired &lt;code&gt;Chain&lt;/code&gt; object based on chain name.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Cafe Amazing&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.models&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;AB019&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;address&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;1234 French Quarter Terrace Columbia MD&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;opening_date&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;2015-12-04T22:55:17Z&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;save&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;number&lt;/span&gt;
+&lt;span class="s1"&gt;u&amp;#39;AB019&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Finally, let's make an Employee object.  Remember that we must provide it a saved &lt;code&gt;Store&lt;/code&gt; reference and we can use a &lt;code&gt;.get(number='AB019')&lt;/code&gt; query to retrieve the desired &lt;code&gt;Store&lt;/code&gt; object based on store number.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;store&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Store&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;AB019&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;retail.models&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Employee&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;employee&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Employee&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;store&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;store&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;026546&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;first_name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;John&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;last_name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;doe&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;hired_date&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;2015-12-04T00:00:00Z&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;employee&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;save&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;Employee&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;objects&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;number&lt;/span&gt;
+&lt;span class="s1"&gt;u&amp;#39;026546&amp;#39;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Look great!  We have now created three objects within our database.&lt;/p&gt;
+&lt;h2&gt;Looking Forward&lt;/h2&gt;
+&lt;p&gt;A lot was covered in this post so this is a great point to end on.  Look for the next post soon, covering API endpoint creation, including views, serializers, and URL routing for the &lt;code&gt;Retail&lt;/code&gt; application.&lt;/p&gt;</summary><category term="django"></category><category term="django rest framework"></category><category term="angularjs"></category></entry><entry><title>Getting Started with Django REST Framework (DRF) and AngularJS (Part 1)</title><link href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-1/" rel="alternate"></link><published>2015-11-10T00:00:00+01:00</published><updated>2015-11-10T00:00:00+01:00</updated><author><name>Tim Butler</name></author><id>tag:engineroom.trackmaven.com,2015-11-10:blog/getting-started-drf-angularjs-part-1/</id><summary type="html">&lt;p&gt;This is the first section in a series about getting started with &lt;a href="https://www.djangoproject.com/"&gt;Django&lt;/a&gt;, &lt;a href="http://www.django-rest-framework.org/"&gt;Django REST Framework (DRF)&lt;/a&gt; and &lt;a href="https://angularjs.org/"&gt;AngularJS&lt;/a&gt;.  The goal of this series to to create an extensive, RESTful web application that uses Django and Django REST Framework as the server application and AngularJS for the client application.  We will not be using Django templates here; our front- and back-end applications will be separate entities.&lt;/p&gt;
+&lt;p&gt;For this project, we will be using Django &lt;code&gt;1.8.5&lt;/code&gt; and Django REST Framework &lt;code&gt;3.3.0&lt;/code&gt;.  Further, this guide assumes you have installed standard python development tools and &lt;a href="https://virtualenvwrapper.readthedocs.org/en/latest/"&gt;virtualenvwrapper&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Goals of this Section&lt;/h2&gt;
+&lt;p&gt;This section focuses on Django, covering the following topics:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#introduction"&gt;Brief introduction to Django, Django REST Framework, and AngularJS&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#project-creation"&gt;Initial project setup and creation&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#folder-structure"&gt;Folder structure modification to support both front- and back-end development&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;a name="introduction"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;A Brief Introduction: Django, DRF and AngularJS&lt;/h2&gt;
+&lt;p&gt;RESTful APIs have become increasingly popular among modern web applications since they provide a standard means to interact with resources across applications.  Conforming to RESTful constraints can create web applications that are both high-performing and maintainable.  The Django and DRF frameworks provide developers with fast and secure ways to create RESTful web applications packed full of useful features, such as an extensive ORM, serialization, custom authentication and permissions classes, and browsable APIs among others.&lt;/p&gt;
+&lt;p&gt;Think of Django as the database manager for your server.  The Django ORM provides powerful ways to locally setup and manage database tables and the data within them.  DRF is the external window into your database.  DRF provides the means to create powerful APIs to access application data while allowing developers to customize permissions, authentication, filtering, and more.  AngularJS if a front-end framework that provides two-way data binding between HTML and Javascript to dynamically display data.&lt;/p&gt;
+&lt;p&gt;At TrackMaven, we use Django and DRF as the main backend frameworks for our web application development and AngularJS for front-end development.  Through these, we find that web application development is both straight-forward and extensible enough to fit into our growing demands while maintaining RESTful principles.&lt;/p&gt;
+&lt;p&gt;&lt;a name="project-creation"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Setting up a New Project&lt;/h2&gt;
+&lt;h3&gt;Creating an Initial Project&lt;/h3&gt;
+&lt;p&gt;Getting started with Django and DRF is quite easy.  Django provides a startup script that builds a starter project with default configurations, an initial &lt;code&gt;/admin/&lt;/code&gt; API endpoint, and a management command file for running the application.&lt;/p&gt;
+&lt;p&gt;To start, let's create a virtual environment for our sample project and download our required packages.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ mkvirtualenv drf-sample
+$ pip install &lt;span class="nv"&gt;django&lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;1.8.5
+$ pip install &lt;span class="nv"&gt;djangorestframework&lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;3.3.0
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Within the virtual environment, we can run the Django start-up script to create a new project named &lt;code&gt;drf_sample&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ django-admin startproject drf_sample
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We now have a new project folder named &lt;code&gt;drf_sample&lt;/code&gt; with the following structure:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf_sample/
+├── drf_sample
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+└── manage.py
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Cool, but what do these files actually do?&lt;/p&gt;
+&lt;dl&gt;
+  &lt;dt&gt;settings.py&lt;/dt&gt;
+  &lt;dd style="padding: 0 0 10px 25px;"&gt;Contains Django/DRF settings and specifies where various project modules are located.  Additional information on the file can be found in the &lt;a href="https://docs.djangoproject.com/en/1.8/topics/settings/"&gt;Django Settings documentation&lt;/a&gt;&lt;/dd&gt;
+  &lt;dt&gt;urls.py&lt;/dt&gt;
+  &lt;dd style="padding: 0 0 10px 25px;"&gt;The URL dispatcher for the project API.  Pre-loaded with an &lt;em&gt;/admin/&lt;/em&gt; endpoint for project administration.&lt;/dd&gt;
+  &lt;dt&gt;wsgi.py&lt;/dt&gt;
+  &lt;dd style="padding: 0 0 10px 25px;"&gt;Uses &lt;a href="http://wsgi.readthedocs.org/en/latest/"&gt;WSGI&lt;/a&gt; to define the runnable application server.&lt;/dd&gt;
+  &lt;dt&gt;manage.py&lt;/dt&gt;
+  &lt;dd style="padding: 0 0 10px 25px;"&gt;Provides command-line options for administrators to setup/run the application server and sync the database with our Django model definitions.  More information on this file can be found in the &lt;a href="https://docs.djangoproject.com/en/1.8/ref/django-admin/"&gt;Django Admin documentation&lt;/a&gt;&lt;/dd&gt;
+&lt;/dl&gt;
+
+&lt;p&gt;&lt;a name="folder-structure"/&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Fitting the Directory Structure to our Needs&lt;/h2&gt;
+&lt;p&gt;The default Django project folder structure is quite minimal and doesn't give us an easy way to organize server code vs client code within the same project.  Remember, our goal is to create a web application that supports both server and client as two separate applications within the same project, so a differentiation between server and client code is preferred.&lt;/p&gt;
+&lt;p&gt;Why use separate applications?  Simple answer: cleaniless, decoupling and consistency.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Keeping the server and client code separate makes for a cleaner development environment.&lt;/li&gt;
+&lt;li&gt;Other than the API contract ensured by the server, the code for the front- and back-end contains little-to-no dependencies between each other.  If the server goes down, the client can still function and report an outtage if necessary.&lt;/li&gt;
+&lt;li&gt;Our server application provides a specific contract as to how data within the server can be accessed.  The client will use that contract to access the data it needs to display on the front-end.  All other applications accessing server data will use the same contract.  Server data access remains consistent irregardless of the application accessing the data.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Update the Directory Structure&lt;/h4&gt;
+&lt;p&gt;Let's modify the default project folder structure to support our separate applications.  The modified folder structure should look like the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf_sample/
+├── client
+└── server
+    ├── config
+    │   ├── __init__.py
+    │   ├── settings.py
+    │   └── wsgi.py
+    ├── __init__.py
+    ├── manage.py
+    └── urls.py
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Note: At this point, our &lt;code&gt;__init__.py&lt;/code&gt; files are blank, so create them where necessary.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;The updated structure separates our newly created Django server project from our future development space for the AngularJS client.  All Django and DRF development is done in the &lt;code&gt;server&lt;/code&gt; directory while all front-end AngularJS development is done in the &lt;code&gt;client&lt;/code&gt; directory.&lt;/p&gt;
+&lt;h4&gt;Fix the Default Module Links&lt;/h4&gt;
+&lt;p&gt;Various parts of a Django application need to link to other modules within the project.  The default project setup used default links based on the original project structure.  Modifying the structure has caused those links to break.  Moving forward, we will ensure that all new module links conform to the new directory structure, but the current broken links must be fixed before we move on.  The following line changes will fix our issues:&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;In server/config/settings.py&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;ROOT_URLCONF&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;urls&amp;#39;&lt;/span&gt;
+    &lt;span class="n"&gt;changes&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt;
+&lt;span class="n"&gt;ROOT_URLCONF&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;server.urls&amp;#39;&lt;/span&gt;
+
+&lt;span class="n"&gt;WSGI_APPLICATION&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;wsgi.application&amp;#39;&lt;/span&gt;
+    &lt;span class="n"&gt;changes&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt;
+&lt;span class="n"&gt;WSGI_APPLICATION&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;config.wsgi.application&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;In server/config/wsgi.py&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environ&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;setdefault&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;DJANGO_SETTINGS_MODULE&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;drf_sample.settings&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;changes&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt;
+&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environ&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;setdefault&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;DJANGO_SETTINGS_MODULE&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;settings&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;In server/manage.py:&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environ&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;setdefault&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;DJANGO_SETTINGS_MODULE&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;drf_sample.settings&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;changes&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt;
+&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;environ&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;setdefault&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;DJANGO_SETTINGS_MODULE&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;config.settings&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We can test that our new links work by using &lt;code&gt;manage.py&lt;/code&gt; from the terminal to run the project server.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ python server/manage.py runserver
+
+Performing system checks...
+
+System check identified no issues &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt; silenced&lt;span class="o"&gt;)&lt;/span&gt;.
+
+You have unapplied migrations&lt;span class="p"&gt;;&lt;/span&gt; your app may not work properly &lt;span class="k"&gt;until&lt;/span&gt; they are applied.
+Run &lt;span class="s1"&gt;&amp;#39;python manage.py migrate&amp;#39;&lt;/span&gt; to apply them.
+
+November 02, &lt;span class="m"&gt;2015&lt;/span&gt; - 20:36:56
+Django version 1.8, using settings &lt;span class="s1"&gt;&amp;#39;config.settings&amp;#39;&lt;/span&gt;
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Perfect!  Our project is now ready to support both server and client code.&lt;/p&gt;
+&lt;h2&gt;Looking Forward&lt;/h2&gt;
+&lt;p&gt;Our project is in a good spot to begin development!  Look for to the next post soon, covering database model definition, model migration to the underlying SQL backend and model object creation through the python Django ORM.&lt;/p&gt;</summary><category term="django"></category><category term="django rest framework"></category><category term="angularjs"></category></entry></feed>

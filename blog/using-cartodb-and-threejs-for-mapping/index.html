@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Monthly Challenge: Visualization - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Monthly Challenge: Visualization</h2>
+  <p class="blog-post-meta single">Posted on <strong>January 08, 2015</strong> by <a href="http://engineroom.trackmaven.com/author/fletcher-heisler/">Fletcher Heisler</a><br>Category: <a href="/category/monthly-challenge/">Monthly Challenge</a> | <a href="http://engineroom.trackmaven.com/blog/using-cartodb-and-threejs-for-mapping/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <h2>Using CartoDB and Three.js for mapping</h2>
+<p>Our next monthly challenge is <strong>visualization</strong>! Although you could visualize data on just about anything in just about any way, for this post we're going to focus on <strong>mapping</strong> data geographically using two different tools:</p>
+<ul>
+<li>CartoDB: a great drag-and-drop solution for super quick and simple map creation - also a paid product that limits its free plan to 50MB of data!</li>
+<li>Three.js and WebGL Globe: for fancy 3D visualizations and an interactive globe onto which we can plot geographic data.</li>
+</ul>
+<p>A few other possible frameworks for mapping that we <em>won't</em> be covering in this post include:</p>
+<ul>
+<li>
+<p><a href="http://www.highcharts.com/">Highcharts</a> is a library for creating quick interactive charts and has a separate product specifically for <a href="http://www.highcharts.com/products/highmaps">creating maps</a>.</p>
+</li>
+<li>
+<p>At TrackMaven, we use <a href="http://d3js.org/">D3.js</a> to create interactive visualizations. Although we won't be covering D3 in this post, Square has a great <a href="http://square.github.io/intro-to-d3/">intro to D3</a>, which you should follow up with a tutorial on <a href="http://bost.ocks.org/mike/map/">mapping in D3</a> written by the creator of D3 himself!</p>
+</li>
+<li>
+<p><a href="http://leafletjs.com/">Leaflet</a> is a great JS library specifically for creating maps and works well with <a href="https://www.mapbox.com/">Mapbox</a> for some very pretty built-in styling. Check out Chris Given's <a href="https://github.com/cmgiven/bikeshare-odds">Bikeshare Odds</a> project for a great demo of creating an interactive map viewable over time.</p>
+</li>
+</ul>
+<h3>Mapping airport data</h3>
+<p>We're going to analyze flight data, eventually creating a 3D rendering of flight patterns by volume projected onto an interactive globe. To get started, though, let's set up the quickest and simplest map possible using <a href="https://cartodb.com">CartoDB</a> to get an idea of our available data.</p>
+<p>Make an account at <a href="https://cartodb.com/signup">CartoDB</a> and browse around the platform. You'll discover that CartoDB actually already has all the <a href="https://fheisler.cartodb.com/dashboard/common_data/Cultural%20datasets">US airports</a> as well as some other common datasets available for immediate use.</p>
+<p>We'll eventually want international data, however, so from <a href="http://openflights.org/data.html">openflights.org</a>, download the CSV file <a href="https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/airports.dat?format=raw">airports.dat</a> to get the locations, names and codes of airports around the world.</p>
+<p>Rename the extension to a proper .CSV, then upload this <code>airports.csv</code> file as a new table in CartoDB.</p>
+<p>Take a look at the table in CartoDB; you can double-click and rename <code>field_7</code> to <code>lat</code> and <code>field_8</code> to <code>lon</code>. Click on the orange "GEO" button next to the column named <code>the_geom</code>, then specify your longitude and latitude. Rename <code>field_5</code> to <code>code</code>; we'll be merging in data based on the airport code later.</p>
+<p>And... voilà! You can already toggle over to <code>MAP VIEW</code> at the top and see a map of all your airport data. Click on the wizard button on the right side and switch to a choropleth map to get a quick idea of the density of airports around the world:</p>
+<p><center><img alt="map1" src="/images/map1.png" /></center></p>
+<p>Now let's add some actual flight data, available from BTS.</p>
+<p>The <a href="http://www.transtats.bts.gov/DatabaseInfo.asp?DB_ID=120&amp;DB_Short_Name=On-Time&amp;DB_Name=Airline%20On-Time%20Performance%20Data&amp;Link=0&amp;DB_URL=Subject_ID=3&amp;Subject_Desc=Passenger%20Travel&amp;Mode_ID2=0">description</a> doesn't really make it clear <em>which</em> 1%+ of non-stop domestic flights were covered, but we'll assume the file <a href="http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=236&amp;DB_Short_Name=On-Time">available here</a> is a representative sample of US air carrier flights. We'll need the <code>Origin</code>, <code>Destination</code>, and (number of total) <code>Flights</code>.</p>
+<p>You now have a couple options; you <em>could</em> load this dataset in as a new CartoDB table and collapse + export it using their SQL editor:</p>
+<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">dest</span><span class="p">,</span> <span class="n">origin</span><span class="p">,</span> <span class="k">count</span> <span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="n">flights</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">dest</span><span class="p">,</span> <span class="n">origin</span>
+</pre></div>
+
+
+<p>However, this will take you over your allotted 50MB, so you wouldn't be able to export this created set without signing up for a paid plan. Plus, it's SQL, so in this case I collapsed the file with a quick Python script instead:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+
+<span class="n">flight_counts</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;flights.csv&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+    <span class="n">csvreader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span>
+    <span class="n">csvreader</span><span class="o">.</span><span class="n">next</span><span class="p">()</span> <span class="c1"># skip header row</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">csvreader</span><span class="p">:</span>
+        <span class="n">orig_dest</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">flight_counts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">orig_dest</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;flight_counts.csv&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+    <span class="n">csvwriter</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span>
+    <span class="n">csvwriter</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">code</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">flight_counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">csvwriter</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="n">code</span><span class="p">,</span> <span class="n">count</span><span class="p">])</span>
+</pre></div>
+
+
+<p>You can load this CSV file of total flight counts by airport code into CartoDB, then choose "options" in the top right and merge the airports table onto the <code>code</code> in the flight data.</p>
+<p>Click on the "infowindow" button on the right (below the wizard) and enable the airport code as a mouse hover interaction, then take a look:</p>
+<p><center><img alt="map2" src="/images/map2.png" /></center></p>
+<p>We can see that we're missing a <em>lot</em> of smaller airports, but we do have coverage and counts that are roughly as expected for the major US airports.</p>
+<p>This dataset includes some other interesting data points that could be interesting and simple enough to analyze; for instance, you could look at weather delays over geographic location and time using a <a href="http://docs.cartodb.com/tutorials/introduction_torque.html">torque map</a>!</p>
+<h3>Visualizing airline data on a globe</h3>
+<p>Let's turn this up a notch with <a href="http://threejs.org/">Three.js</a> and the <a href="http://www.chromeexperiments.com/globe">WebGL Globe</a> to visualize flight data on a 3D globe.</p>
+<p>We're going to create a page <code>map.html</code> available <a href="/demos/globe/map.html">here</a>, based on the WebGL Globe <a href="https://github.com/dataarts/webgl-globe/#basic-usage">basic example</a> (with a few tweaks and a bugfix for how options are actually passed):</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">html</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">&quot;utf-8&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>Flight data visualization<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;helpers/three.min.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;globe/globe.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&#39;container&#39;</span> <span class="p">/&gt;</span>
+
+    <span class="p">&lt;</span><span class="nt">script</span><span class="p">&gt;</span>
+      <span class="c1">// Where to put the globe?</span>
+      <span class="kd">var</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span> <span class="s1">&#39;container&#39;</span> <span class="p">);</span>
+
+      <span class="c1">// Make the globe</span>
+      <span class="kd">var</span> <span class="nx">globe</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DAT</span><span class="p">.</span><span class="nx">Globe</span><span class="p">(</span> <span class="nx">container</span> <span class="p">);</span>
+
+      <span class="c1">// We&#39;re going to ask a file for the JSON data.</span>
+      <span class="kd">var</span> <span class="nx">xhr</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">();</span>
+
+      <span class="c1">// Where do we get the data?</span>
+      <span class="nx">xhr</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span> <span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;flight_data.json&#39;</span><span class="p">,</span> <span class="kc">true</span> <span class="p">);</span>
+
+      <span class="c1">// What do we do when we have it?</span>
+      <span class="nx">xhr</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+
+        <span class="c1">// If we&#39;ve received the data</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">===</span> <span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">===</span> <span class="mi">200</span> <span class="p">)</span> <span class="p">{</span>
+
+          <span class="c1">// Parse the JSON</span>
+          <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">responseText</span> <span class="p">);</span>
+
+          <span class="c1">// Tell the globe about your JSON data</span>
+          <span class="k">for</span> <span class="p">(</span> <span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">data</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span> <span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// Incorrect version in current example:</span>
+            <span class="c1">// globe.addData( data[i][1], &#39;magnitude&#39;, data[i][0] );</span>
+
+            <span class="nx">globe</span><span class="p">.</span><span class="nx">addData</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="nx">i</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;format&#39;</span><span class="o">:</span> <span class="s1">&#39;magnitude&#39;</span><span class="p">});</span>
+          <span class="p">}</span>
+
+          <span class="c1">// Create the geometry</span>
+          <span class="nx">globe</span><span class="p">.</span><span class="nx">createPoints</span><span class="p">();</span>
+
+          <span class="c1">// Begin animation</span>
+          <span class="nx">globe</span><span class="p">.</span><span class="nx">animate</span><span class="p">();</span>
+
+        <span class="p">}</span>
+      <span class="p">};</span>
+
+      <span class="c1">// Begin request</span>
+      <span class="nx">xhr</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span> <span class="kc">null</span> <span class="p">);</span>
+    <span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</pre></div>
+
+
+<p>We'll need to prepare some JSON data to be loaded in from the file <code>flight_data.json</code>. For <code>globe.js</code> to read properly, this should be of the format:</p>
+<div class="highlight"><pre><span></span><span class="p">[[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lon1</span><span class="p">,</span> <span class="n">mag1</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">mag2</span><span class="p">,</span> <span class="o">.</span> <span class="o">.</span> <span class="o">.</span> <span class="p">]]]</span>
+</pre></div>
+
+
+<p>Above, the <code>mag</code> values are just each total count normalized by the maximum count in the data. We can prepare this file from the previous dataset using a slightly modified preprocessing script:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">csv</span>
+
+<span class="n">data_dict</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;flight_pos_counts.csv&#39;</span><span class="p">,</span> <span class="s1">&#39;rU&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">infile</span><span class="p">:</span>
+    <span class="n">csvreader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span>
+    <span class="n">csvreader</span><span class="o">.</span><span class="n">next</span><span class="p">()</span> <span class="c1"># skip header row</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">csvreader</span><span class="p">:</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">13</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span>
+        <span class="n">data_dict</span><span class="p">[</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">max_count</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">data_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+<span class="k">for</span> <span class="n">lat_lon</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">data_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">data</span> <span class="o">+=</span> <span class="n">lat_lon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lat_lon</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">str</span><span class="p">(</span><span class="n">count</span><span class="o">/</span><span class="n">max_count</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;flight_data.json&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;[[&quot;counts&quot;,[{}]]]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+</pre></div>
+
+
+<p>You can download this prepared dataset directly <a href="/demos/globe/flight_data.json">here</a>.</p>
+<p>Finally, we'll need to be able to point to <a href="https://github.com/dataarts/webgl-globe/blob/master/globe/globe.js">globe.js</a> and, from within that script, a <a href="https://github.com/dataarts/webgl-globe/blob/master/globe/world.jpg">world map</a> to overlay on the globe.</p>
+<p>Cross origin requests will(/should) be disabled by your browser, meaning that you won't be able to load static files from disk into the page, so you'll need to run everything from a local host; just <code>cd</code> into your project directory and run a server with:</p>
+<div class="highlight"><pre><span></span>python -m SimpleHTTPServer
+</pre></div>
+
+
+<p>With everything properly connected, you should now be able to visit the fully functional page with an interactive globe at:</p>
+<div class="highlight"><pre><span></span>http://localhost:8000/map.html
+</pre></div>
+
+
+<p><center><img alt="map3" src="/images/map3.png" /></center></p>
+<h3>Visualizing flight paths in 3D</h3>
+<p>As a warning, this section is still a work in progress! We're going to visualize flights <em>between</em> airports (specifically non-stop flights with at least one airport in the US) using the BTS dataset <a href="http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=261">T-100 International Segment (All Carriers)</a>, which they describe as follows:</p>
+<p><code>This table contains international non-stop segment data reported by both U.S. and foreign air carriers, including carrier, origin, destination, aircraft type and service class for transported passengers, freight and mail, available capacity, scheduled departures, departures performed, aircraft hours, and load factor when at least one point of service is in the United States or one of its territories. International flight data is released 3 months after domestic data. Flights with both origin and destination in a foreign country are not included.</code></p>
+<p>We'll grab <code>DepPerformed</code>, <code>Origin</code> and <code>Destination</code> from this table, join with the <code>airports.dat</code> file from above, and (again, after some preprocessing) prepare a file <code>flight_traffic.json</code> along the following format, where the magnitude <code>mag1</code> of each lat/lon origin and destination pair is the count of flights divided by the maximum count for any pair:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="n">orig_lat1</span><span class="p">,</span> <span class="n">orig_lon1</span><span class="p">,</span> <span class="n">dest_lat1</span><span class="p">,</span> <span class="n">dest_lon1</span><span class="p">,</span> <span class="n">mag1</span><span class="p">,</span> <span class="n">orig_lat2</span><span class="p">,</span> <span class="n">orig_lon2</span><span class="p">,</span> <span class="n">dest_lat2</span><span class="p">,</span> <span class="n">dest_lon2</span><span class="p">,</span> <span class="n">mag2</span><span class="p">,</span> <span class="o">.</span> <span class="o">.</span> <span class="o">.</span><span class="p">]</span>
+</pre></div>
+
+
+<p>This final table is available <a href="/demos/globe/flight_traffic.json">here</a>.</p>
+<p>Now for the tricky part: displaying arcs between airports as "flight" patterns... I created a modified <code>globe2.js</code> available <a href="/demos/globe/globe2.js">here</a>, which in addition to an <code>addPoint()</code> function includes an <code>addPath()</code> function to draw 3D splines connection two points on the globe.</p>
+<p>My trigonometry is a little rusty, so I'm still working out the details of how to interpolate spherical coordinates properly. For now, I used a <em>very</em> hacky system of finding a "midpoint" between the two points, which mostly only works for flights around the US depending on the signs of the coordinate pairs; you'll notice for instance that all the flights to Europe currently dip into the earth before reaching their destinations! I then generate a smooth spline using those three points.</p>
+<p>You can see the results, which I limit to only the busiest airport pairs to cut down somewhat on clutter, <a href="/demos/globe/map2.html">here as a live demo</a>:</p>
+<p><center><img alt="map4" src="/images/map4.png" /></center></p>
+<p>I will update this post when/if I properly rework the flight paths; for now, all of the paths calculated in spherical coordinates seem to stray <em>slightly</em> off course... One day, it might even look half as cool as this <a href="http://nisatapps.prio.org/armsglobe/">absolutely crazy visualization</a> of global firearms trade built on work from the crazy Google Ideas. Something to aspire to, but maybe a bit complex for a monthly challenge!</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/charting/">charting</a>, <a href="/tag/d3/">d3</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image fletcher-heisler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Fletcher Heisler</h3>
+<p class="well-content">I am the VP of Engineering at <a href="http://trackmaven.com/">TrackMaven</a> and founder of <a href="https://realpython.com/">Real Python</a>.</p>
+<p class="well-content">You can follow me on <a href="https://twitter.com/fheisler">Twitter</a> and find a few of my open-source projects on <a href="https://github.com/fheisler">GitHub</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

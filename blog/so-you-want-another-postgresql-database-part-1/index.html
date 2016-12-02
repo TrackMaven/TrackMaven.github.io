@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+So You Want Another PostgreSQL Database? (Part 1) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">So You Want Another PostgreSQL Database? (Part 1)</h2>
+  <p class="blog-post-meta single">Posted on <strong>September 20, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/john-young/">John Young</a><br>Category: <a href="/category/devops/">DevOps</a> | <a href="http://engineroom.trackmaven.com/blog/so-you-want-another-postgresql-database-part-1/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <h2>Streaming replication with PostgreSQL 9.3 on Amazon EC2</h2>
+<p>They grow up so fast, don't they? It seems like just yesterday you were setting up your PostgreSQL server and tweaking settings you barely understood to try to get the most out of your database. But now, you've got a lot more data and your traffic continues to rise, and you've decided it's time your database had a few companions to help it out. Fortunately, PostgreSQL 9 makes it rather simple to set up a primary database that can handle writes, and any number of replica databases which are read-only, stay in sync with the primary, and can be promoted to the primary in the event of failure on your primary database.</p>
+<p>There are a lot of factors that come into play when you decide to scale your database infrastructure and they vary wildly from project to project. These are outside the scope of this post, and I'm is going to assume you have already decided on a primary/replica database setup. </p>
+<h2>So what are we going to do?</h2>
+<p>We are going to take our current single-database setup and turn it into a primary database with a single replica following the primary using streaming replication and WAL archiving. We will perform all read operations from the replica and all write operations to the primary. The replica will be able to take over the role of primary at any moment we need it to, and is thus known as a <strong><em>hot standby</em></strong> server.</p>
+<h2>How it all works: understanding streaming replication</h2>
+<p>Everything you do to your database (inserts, updates, deletes, alter table, etc.) is first recorded on disk in what is called a Write-Ahead Log, or WAL for short. Only once the WAL has been updated will any change be made to the database. In the event of a crash, you are able to recover to the exact moment of the crash by replaying the WAL files and reconstructing all changes that have been made to the database. This is the core of streaming replication.</p>
+<p>On every write made to the primary, a WAL file is written to. The WAL file is then forwarded along to the replica. Our replica server, which operates in a kind of permanent recovery mode, is continuously listening to the primary and will reconstruct all changes made by reading the primary's WAL. By doing so, our replica database stays in sync with the primary nearly instantaneously.</p>
+<p>It is important to note that the forwarding of WAL files is done only after a transaction has been committed to the primary and thus there will be a small period, generally less than one second, where a change has been made to the primary and is not yet reflected on the replica.</p>
+<h2>Setting it all up</h2>
+<p>We use <a href="https://github.com/wal-e/wal-e">WAL-E</a> to store backups of our database and WAL files in S3 for additional security against failure. Its setup warrants its own writeup, and is not necessary for streaming replication. I have left the WAL-E commands in the instructions below, since there is no "right" answer for how and where you store your WAL files. For instance, you can certainly store them locally on the primary and rsync them to the replica. It's incredibly easy to set up, but if your primary goes down and you can't access that server, you may not be able to have a fully current replica to promote. All that changes is the <code>archive_command</code> on the primary and the <code>restore_command</code> on the replica. These can be set to anything you need, so long as the primary is shipping its WALs to a place where the replica can fetch them.</p>
+<p>Alright, let's get started.</p>
+<h3>Perform on both primary and replica</h3>
+<ul>
+<li>Launch two EC2 instances running Ubuntu Server 14.04 and install PostgreSQL</li>
+<li><code>sudo apt-get update &amp;&amp; sudo apt-get upgrade</code></li>
+<li><code>sudo apt-get install postgresql-9.3 postgresql-client-9.3 postgresql-contrib-9.3</code></li>
+<li>When installed, PostgreSQL will create a user named postgres from which all further commands need to be run from. To take over the postgres user, we must first give it a password: <code>sudo passwd postgres</code></li>
+<li>Become the postgres user: <code>su - postgres</code> and enter the password from the previous step</li>
+</ul>
+<h3>Perform on both primary and replica</h3>
+<ul>
+<li>If you aren't using WAL-E or sending the WAL files to a third-party server, you're going to need the two servers to be able to communicate with each other via ssh without passwords for WAL files to be received by the replica (and sent, in the case of the replica being promoted to primary if primary goes down). <strong>This must all be done as the postgres user.</strong></li>
+<li><code>ssh-keygen -t rsa</code></li>
+<li><code>eval $('ssh-agent')</code></li>
+<li><code>ssh-add</code></li>
+<li>Create <code>authorized_keys</code> file in ~/.ssh/</li>
+<li>Copy other server's id_rsa.pub into <code>authorized_keys</code></li>
+<li>Test correct functionality: <code>ssh &lt;IP_ADDRESS_OF_OTHER_SERVER&gt;</code><ul>
+<li>It's important that ssh works from postgres user to postgres user with no parameters given. If my primary server's IP is 1.2.3.4 and my replica's is 5.6.7.8, then I should be able to do this with no problems: <code>postgres@ip-1-2-3-4:~$ ssh 5.6.7.8</code></li>
+</ul>
+</li>
+</ul>
+<h3>Perform only on primary</h3>
+<p>We need a user with replication privileges so that we can ship our WAL files. This only needs to be done on the primary, as all changes made to it will be automatically re-created on the replica. We also need to tune specific settings in the config files to tell PostgreSQL what we want it to do. Most importantly, the <code>archive_command</code> setting is what actually ships WAL files, and here we use WAL-E to send ours to S3 for an external backup. The others tell the server that we want our server to archive detailed WAL files, with more detailed documentation on the behavior and other choices for each available from <a href="http://www.postgresql.org/docs/9.3/static/runtime-config-wal.html">the Postgres docs</a>.</p>
+<ul>
+<li>Create a user with superuser and replication privileges: 
+<code>psql -c "CREATE USER replicator SUPERUSER REPLICATION LOGIN CONNECTION LIMIT 1 ENCRYPTED PASSWORD '&lt;PASSWORD&gt;';"</code></li>
+<li>In the event that the psql command says that authentication failed, edit /etc/postgresql/9.3/main/pg_hba.conf and edit the line (likely top line) that says 
+<code>local all postgres md5</code> to say <code>local all postgres peer</code> and restart the server with 
+<code>service postgresql restart</code></li>
+<li>Edit /etc/postgresql/9.3/main/pg_hba.conf: Add <code>host replication replicator &lt;IP_OF_REPLICA&gt;/32 md5</code> to the bottom of the file.</li>
+<li>Edit /etc/postgresql/9.3/main/postgresql.conf and add the following options <strong>(ensure they are not set anywhere else in the config file already)</strong>:</li>
+</ul>
+<div class="highlight"><pre><span></span>hot_standby = &#39;on&#39;
+max_wal_senders = 5
+wal_level = &#39;hot_standby&#39;
+archive_mode = &#39;on&#39;
+archive_command = &#39;envdir /etc/wal-e.d/env /usr/local/bin/wal-e wal-push %p&#39;
+archive_timeout = 60
+listen_addresses = &#39;*&#39;
+</pre></div>
+
+
+<ul>
+<li>Restart the server: <code>service postgresql restart</code></li>
+</ul>
+<h3>Perform only on replica</h3>
+<ul>
+<li>Become the postgres user: <code>su - postgres</code></li>
+<li>Stop the server: <code>service postgresql stop</code></li>
+<li>Edit /etc/postgresql/9.3/main/postgresql.conf and add the following options <strong>(ensure they are not set anywhere else in the config file already)</strong>:</li>
+</ul>
+<div class="highlight"><pre><span></span>hot_standby = &#39;on&#39;
+max_wal_senders = 5
+wal_level = &#39;hot_standby&#39;
+</pre></div>
+
+
+<ul>
+<li>Next, we want to create a base backup of the primary and write a recovery.conf file to tell PostgreSQL how read from our WALs. In our case, that means pulling WAL files from S3 using WAL-E. Create a new script file: <code>vim replication_setup</code> and place the following commands in it.</li>
+</ul>
+<div class="highlight"><pre><span></span>echo Stopping PostgreSQL
+service postgresql stop
+
+echo Cleaning up old cluster directory
+rm -rf /var/lib/postgresql/9.3/main
+
+echo Starting base backup as replicator
+pg_basebackup -h &lt;IP_OF_PRIMARY&gt; -D /var/lib/postgresql/9.3/main -U replicator -v -P
+
+echo Writing recovery.conf file
+bash -c &quot;cat &gt; /var/lib/postgresql/9.3/main/recovery.conf &lt;&lt;- EOF
+  standby_mode = &#39;on&#39;
+  primary_conninfo = &#39;host=&lt;IP_OF_PRIMARY&gt; port=5432 user=replicator password=&lt;PASSWORD&gt;&#39;
+  trigger_file = &#39;/tmp/postgresql.trigger&#39;
+  restore_command = &#39;envdir /etc/wal-e.d/env /usr/local/bin/wal-e wal-fetch &quot;%f&quot; &quot;%p&quot;&#39;
+EOF
+&quot;
+
+echo Starting PostgreSQL
+service postgresql start
+</pre></div>
+
+
+<ul>
+<li>Allow execution of that script: <code>chmod +x replication_setup</code></li>
+<li>Run the script: <code>./replication_setup</code></li>
+<li>Verify that your replica is working. Check the log at /var/log/postgresql/postgresql-9.3-main.log. You should see output similar to the following.</li>
+</ul>
+<div class="highlight"><pre><span></span>2014-05-02 21:12:25 UTC LOG:  consistent recovery state reached at 0/450006C8
+2014-05-02 21:12:25 UTC LOG:  database system is ready to accept read only connections
+2014-05-02 21:12:25 UTC LOG:  started streaming WAL from primary at 0/45000000 on timeline 1
+</pre></div>
+
+
+<ul>
+<li>You can also check that the WAL send/receive processes are running:</li>
+<li>primary: <code>ps -ef | grep sender</code></li>
+<li>replica: <code>ps -ef | grep receiver</code></li>
+</ul>
+<h3>Both primary and replica</h3>
+<ul>
+<li>Finally, add the IP addresses of your EC2 instances so that they can see your fancy new databases: <code>vim /etc/postgresql/9.3/main/pg_hba.conf</code> and add this line to the bottom.</li>
+</ul>
+<div class="highlight"><pre><span></span>host    &lt;user_name&gt;       &lt;db_name&gt;     &lt;IP_ADDRESS&gt;/32           md5
+</pre></div>
+
+
+<ul>
+<li>
+<p>Restart both servers: <code>service postgresql restart</code></p>
+</li>
+<li>
+<p>Celebrate</p>
+</li>
+</ul>
+<p><strong> Continue onto <a href="/blog/so-you-want-another-postgresql-database-part-2/">Part 2</a></strong></p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/postgres/">postgres</a>, <a href="/tag/double-database/">double-database</a>, <a href="/tag/how-to/">how-to</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image john-young-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>John Young</h3>
+<p class="well-content">I am a Senior Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Follow me on <a href="https://twitter.com/johnyoungdev">Twitter</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

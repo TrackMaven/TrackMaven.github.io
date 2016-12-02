@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Building a Testable D3 Charting Application Within Angular.js - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Building a Testable D3 Charting Application Within Angular.js</h2>
+  <p class="blog-post-meta single">Posted on <strong>October 04, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/fred-battista/">Fred Battista</a><br>Category: <a href="/category/graphing/">Graphing</a> | <a href="http://engineroom.trackmaven.com/blog/building-a-testable-d3-charting-application-within-angularjs/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <h2>Why this post?</h2>
+<blockquote>
+<ul>
+<li>
+<p>Most of the examples on d3js.org are much smaller, proof of concept applications which funcion well as a single page app but not necessarily in the reuseable context of a larger, more complex app.</p>
+</li>
+<li>
+<p>This post assumes familiarity with Angular.js' concepts of Controllers, Directives, and Services, Jasmine's testing framework, and d3 concepts like axis, scale, and path.</p>
+</li>
+<li>
+<p>d3.js' customizeability can rapidly lead to a fragile codebase within larger applications. We provide some suggestions on how to modularize and then test a charting application.</p>
+</li>
+</ul>
+</blockquote>
+<p><em>nb: At TrackMaven, we use Coffeescript+Angular to manage our frontend.</em></p>
+<p>Graphing is a core feature of TrackMaven's application. As we added more graph types, it became obvious that a monolithic hunk of coffeescript was not an ideal foundation.</p>
+<p>Our solution was to separate the graphing bloc into separate factories, services, and directories to enable code reuse and testing along the lines of the actual components of the SVG itself.</p>
+<p>We think that everything that was previously a section of chained definitions (e.g <code>element.attr('','')..</code>) could be promoted to its own function within a service.</p>
+<p>This means that our graph's many layers and variables which were all previously defined within a single directive like this:</p>
+<div class="highlight"><pre><span></span>svg = d3.select(element[0])
+y = d3.scale.linear()
+x = d3.time.scale()
+</pre></div>
+
+
+<p>now look like this:</p>
+<div class="highlight"><pre><span></span>angular.module(&#39;graphing.directives.visualizer&#39;)
+
+.service(&#39;graphBase&#39;, (dateFilter) -&gt;
+    class GraphBase
+        generate: (element) -&gt;
+            @generateSvg(element)
+            @generateAxises()
+            ...
+
+        generateSvg: (element) -&gt;
+            @svg = d3.select(element[0])
+            ...
+
+        generateAxises: -&gt;
+            @yAxis = d3.svg.axis()
+            @xAxis = d3.svg.axis()
+            ...
+
+        svgContainer: -&gt;
+            @svgContainer = @svg.append(&quot;svg:g&quot;)
+                .attr(&quot;class&quot;, &quot;svg-container&quot;)
+                .attr(&quot;transform&quot;, &quot;translate(#{@sidePadding})&quot;)
+
+            return @svgContainer
+
+        graphContainer: -&gt;
+            @graphContainer = @svgContainer.append(&quot;svg:g&quot;)
+                .attr(&quot;class&quot;, &quot;graph-canvas&quot;)
+                .attr(&quot;id&quot;, &quot;graph-svg&quot;)
+
+            @graphContainer.append(&quot;svg:rect&quot;)
+                .attr(&quot;width&quot;, @width)
+                .attr(&quot;height&quot;, @height)
+                .style(&quot;fill&quot;, &#39;white&#39;)
+
+            return @graphContainer
+</pre></div>
+
+
+<p>The advantages of this approach may not be immediately obvious (extra work! why?) but within the context of d3 and enterprise software they are important.</p>
+<p><strong>1. Separate definition of container from its initialization</strong></p>
+<p>Firstly, the defenition/creation of graphical layers has been separated from their initialization. This can be somewhat confusing but is a consequence of the <a href="http://www.w3.org/TR/SVG/">SVG spec</a> having no support for a z-index. There is no way to change the 'stacked' order of elements on an SVG except by manually redrawing the elements again in the correct order.</p>
+<p>By separating the container definition from the initialization it becomes much easier to correctly draw and test the order of SVG elements. This is of especial importance when clipping masks are in play - untangling long code blocks is annoying.</p>
+<p><strong>2. Easily change and re-initialize graph types</strong></p>
+<p>With the returned values on the graphBase object it becomes trivial to alter the properties as needed. If I need to give the svgContainer a green background it is as simple as: <code>@svgContainer.style('background-color','green')</code> WHEREVER I need to make the change. I do not need to hunt for the block where the <code>svgContainer</code> is created.</p>
+<p><strong>3. Testing is easier/feasible</strong></p>
+<p>Testing is easier with this approach. Previously, any change in the monolithic code block had the potential ta affect every test. With the modular approach, your integration tests may fail but you unit tests have a much higher chance of survival.</p>
+<p>With the above setup it is possible to mock and test the creation of elements with specific ids on any given SVG. This is very difficult to do with a giant block of code.</p>
+<p>For instance, this is the first test of our graph tooltips:</p>
+<div class="highlight"><pre><span></span>    it &#39;should correctly render tooltips&#39;, -&gt;
+        tooltips.redraw(mockData)
+        tips = d3.select(element[0]).selectAll(&#39;.graph-tooltip&#39;)[0]
+        expect(tips.length).toEqual(1)
+        expect(tips[0].style[&#39;left&#39;]).toEqual(&#39;32px&#39;)
+        expect(tips[0].style[&#39;top&#39;]).toEqual(&#39;10px&#39;)
+        expect(element[0].innerText).toContain(&#39;100&#39;)
+        expect(element[0].innerText).toContain(&#39;XXXXXX-BBBBB&#39;)
+</pre></div>
+
+
+<h3>None of the above is revolutionary</h3>
+<p>Nothing above is news: modularizing and re-factoring for code reuse is good practice generally. However, client side graphing code can be difficult to unravel and we think that our approach of service modularization is helpful.</p>
+<h3>Next steps</h3>
+<p>We expect to go deeper with this modularization as we add graph types. Specifically, we want to modularize the <code>brush</code> interaction to flex and activate across different SVG elements. Creating a separate <code>graphBrush</code> service is likely.</p>
+<p><em>Additional resources which cover similar material:</em></p>
+<ul>
+<li><a href="http://misoproject.com/d3-chart/">d3.chart: a framework for building reusable charts with d3.js</a></li>
+<li><a href="http://bost.ocks.org/mike/chart/">Mike Bostok's 'Towards Reuseable Charts'</a></li>
+<li><a href="http://pivotallabs.com/d3-test-driven-development/">d3 and Test-Driven-Development</a></li>
+<li><a href="https://github.com/stevenalexander/d3-testing">Great set of example code in vanilla JS on Jasmine-driven testing of D3</a></li>
+</ul>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/charting/">charting</a>, <a href="/tag/d3/">d3</a>, <a href="/tag/best-practices/">best-practices</a>, <a href="/tag/testing/">testing</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image fred-battista-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Fred Battista</h3>
+<p class="well-content">I am a Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Follow me on <a href="https://twitter.com/nowfred">Twitter</a></p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

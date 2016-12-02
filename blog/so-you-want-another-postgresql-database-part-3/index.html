@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+So you want another PostgreSQL database? (part 3) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">So you want another PostgreSQL database? (part 3)</h2>
+  <p class="blog-post-meta single">Posted on <strong>December 29, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/john-young/">John Young</a><br>Category: <a href="/category/devops/">DevOps</a> | <a href="http://engineroom.trackmaven.com/blog/so-you-want-another-postgresql-database-part-3/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p><strong>Read <a href="/blog/so-you-want-another-postgresql-database-part-1/">Part 1</a> or <a href="/blog/so-you-want-another-postgresql-database-part-2/">Part 2</a></strong></p>
+<h2>Tuning your PostgreSQL servers on Amazon EC2</h2>
+<p>It will probably come as no surprise that the settings that are best for your PostgreSQL cluster are heavily dependent on your data and how you're using it. No one can say what will work best for you in every single use case, and it's up to you to profile your database to determine what does and does not work for you. With that being said, a great starting point for general use cases can be found in Christophe Pettus' talk <a href="http://thebuild.com/presentations/not-your-job.pdf">PostgreSQL when it's not your job</a>. If you're completely new to tuning your Postgres instances, I highly recommend using these settings as an initial profile point.</p>
+<p>Here's a quick summary of his suggestions:</p>
+<div class="highlight"><pre><span></span>Memory settings
+* shared_buffers: Set to 25% of total system RAM (or 8GB if RAM &gt; 32GB)
+* work_mem: Start at 32-64MB.
+  * Look for `temporary file` lines in logs then set it to 2-3x the size of the largest temp file you see
+* maintenance_work_mem: 10% of RAM, up to 1GB
+* effective_cache_size: 50-75% of total RAM
+
+Checkpoint settings
+* wal_buffers: 16MB
+* checkpoint_completion_target: 0.9
+* checkpoint_timeout: 10min
+* checkpoint_segments: 32
+  * Check logs for checkpoint entries. Adjust checkpoint_segments so that checkpoints happen due to timeouts rather than filling segments
+
+Planner settings
+* random_page_cost: 1.1 for Amazon EBS
+</pre></div>
+
+
+<p>Some of these settings will naturally be somewhat confusing, and even a bit intimidating to change. My advice? Don't afraid to experiment, even if you're going outside of the 'norm' of what others say your settings should be.</p>
+<h2>A real-world example</h2>
+<p>When we saw huge performance slowdowns on our database, we knew we needed more aggressive caching of our data, but how would we accomplish that? The <code>shared_buffers</code> paramater controls how much memory is dedicated to caching data in Postgres, but every online resource we found said that 8GB was as large as was feasible. Nonsense, I say!</p>
+<p>The first step to solving any problem is determining where the problem is. We needed to be able to cache several entire tables of our database for certain heavily-used, customer facing read operations. When our data was smaller, the settings above were just fine. But as we've grown, it quickly became apparent that an 8GB cache for a 20GB table is woefully insufficient. How did we discover this? I'm glad you asked. Here is a handy SQL script to show you what is actually sitting in your shared_buffers:</p>
+<div class="highlight"><pre><span></span>SELECT
+c.relname,
+pg_size_pretty(count(*) * 8192) as buffered,
+round(100.0 * count(*) /
+(SELECT setting FROM pg_settings
+WHERE name=&#39;shared_buffers&#39;)::integer,1)
+AS buffers_percent,
+round(100.0 * count(*) * 8192 /
+pg_relation_size(c.oid),1)
+AS percent_of_relation
+FROM pg_class c
+INNER JOIN pg_buffercache b
+ON b.relfilenode = c.relfilenode
+INNER JOIN pg_database d
+ON (b.reldatabase = d.oid AND d.datname = current_database())
+GROUP BY c.oid,c.relname
+ORDER BY 3 DESC
+LIMIT 10;
+</pre></div>
+
+
+<p>This script will tell show us the top 10 tables being stored in our cache, ranked from highest memory usage to lowest. Especially important is the <code>percent_of_relation</code> column. Is your most heavily read table only 65% cached? That can be a pretty big problem. For us, the additional second or two it took for customers to load a page was troublesome, but not our largest problem. This lack of caching caused our tasks to run about 300-500 milliseconds slower on average. A few hundred milliseconds added to a few million tasks quickly caused us to be overrun by tasks that ran too slowly to clear in time for the next set of tasks to be scheduled. The result? We had a task queue that would grow forever and never clear, all thanks to bad caching strategy.</p>
+<p>We decided to increase the power of our database by bumping our EC2 instance to an <code>r3.4xlarge</code>, giving us 16 cores and 122GB of memory. To fully utilize this much more powerful machine, we needed to tweak our settings far beyond the 'recommended' levels.</p>
+<p>Here is what we settled on:</p>
+<div class="highlight"><pre><span></span>### MEMORY SETTINGS
+shared_buffers = 25GB
+work_mem = 32MB
+maintenance_work_mem = 1GB
+effective_cache_size = 100GB
+</pre></div>
+
+
+<p>And here is an action shot, using <code>htop</code>, with the yellow coloring denoting memory reserved for our cache:
+<center><img alt="Database resource usage as seen by htop" src="/images/db-usage.png" /></center></p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/postgres/">postgres</a>, <a href="/tag/how-to/">how-to</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image john-young-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>John Young</h3>
+<p class="well-content">I am a Senior Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Follow me on <a href="https://twitter.com/johnyoungdev">Twitter</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

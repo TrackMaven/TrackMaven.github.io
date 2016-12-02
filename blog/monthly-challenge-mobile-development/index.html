@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Monthly Challenge: Mobile Development - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Monthly Challenge: Mobile Development</h2>
+  <p class="blog-post-meta single">Posted on <strong>February 17, 2015</strong> by <a href="http://engineroom.trackmaven.com/author/fletcher-heisler/">Fletcher Heisler</a><br>Category: <a href="/category/monthly-challenge/">Monthly Challenge</a> | <a href="http://engineroom.trackmaven.com/blog/monthly-challenge-mobile-development/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>TrackMaven's next <a href="www.meetup.com/TrackMaven-Monthly-Challenge/">Monthly Challenge</a> meetup will cover <a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/events/219945053/">mobile development</a>. To help kickstart some projects, in this post I'll cover the basics of one way to get started creating a cross-platform mobile app.</p>
+<p>We'll be using <a href="http://ionicframework.com/">Ionic</a>, a framework for making beautiful, responsive mobile apps using HTML5 and AngularJS. Ionic sits on top of <a href="http://cordova.apache.org/">Cordova</a> and has a <a href="http://ionicframework.com/blog/what-is-cordova-phonegap/">complicated relationship</a> with <a href="http://phonegap.com/">PhoneGap</a>, both of which can also be used individually for writing cross-platform mobile applications. A few other possible options for getting started in mobile development:</p>
+<ul>
+<li><a href="http://jlongster.com/First-Impressions-using-React-Native">React Native</a> is (as of this post) not yet publicly released but shows tremendous promise</li>
+<li>Go native with the <a href="http://developer.android.com/sdk/index.html">Android SDK</a> and start <a href="https://developer.apple.com/library/ios/referencelibrary/GettingStarted/RoadMapiOS/index.html">jumping through hoops</a> to develop on Apple's iOS</li>
+<li>Try out <a href="http://kivy.org/">Kivy</a> for writing mobile (and non-mobile) apps in Python! I personally haven't had great luck getting Kivy apps to compile on multiple devices, but it's definitely an appealing concept</li>
+<li>Appcelerator's <a href="http://www.appcelerator.com/titanium/">Titanium</a> uses a JavaScript-based SDK and covers iOS, Android, Windows, BlackBerry and HTML5; I haven't tried it out, but have heard that in some cases (especially on older devices) it may be more performant than Ionic, being a step or two closer to native code</li>
+</ul>
+<p>For this Ionic example, we're going to cover the following:
+- Push a sample app to iOS and Android emulators + devices (without forking over $99 to Apple)
+- Set up custom styles using Sass
+- Convert the sample JS to CoffeeScript with automatic gulp compilation
+- Add custom icons and a splash screen</p>
+<p>Let's get to it!</p>
+<h2>Dependencies</h2>
+<p>First off, you'll need to have <a href="http://nodejs.org/">Node.js</a> installed, then install the <code>ionic</code> NPM package:</p>
+<p><code>sudo npm install -g cordova ionic</code></p>
+<p>You can now create a new Ionic project using one of three templates:</p>
+<ul>
+<li><code>blank</code> - you guessed it</li>
+<li><code>tabs</code> - includes a title header bar and "home", "star", and "settings" buttons on a footer</li>
+<li><code>sidemenu</code> - includes a collapsible lefthand sidebar</li>
+</ul>
+<p>ionic start myprojectname sidemenu
+cd myprojectname/
+ionic serve</p>
+<p>After changing into the <code>myprojectname</code> directory (or whatever you want to name it), running <code>ionic serve</code> will start up the sample project on localhost and automatically open the running app in your browser. Ship it!</p>
+<blockquote>
+<p>One important note: when testing your app locally, because of <a href="http://enable-cors.org/">CORS</a> rules, you won't be able to access any external data. For instance, calling an API or even loading in a picture from the web will be blocked by default on most browsers.</p>
+</blockquote>
+<p>There are a few ways around this; for instance, you <em>could</em> use JSONP instead of <code>$http</code> calls, mess with request headers, load up a separate brower without CORS protection... <strong>or</strong> my preferred method: just use a <a href="https://chrome.google.com/webstore/detail/cors-toggle/omcncfnpmcabckcddookmnajignpffnh?hl=en">Chrome plugin</a> to toggle CORS on and off. This isn't the most secure, idea, so make sure you're only purposefully allowing cross domain requests while testing your app, not browsing the web.</p>
+<h2>Run it on iOS</h2>
+<p>Before diving into the code, let's make sure we can get the app on all our devices. For loading the project onto an iOS device, the first steps is to <a href="https://developer.apple.com/xcode/downloads/">have XCode</a>. Next you'll need to add iOS as a platform for the Ionic project and build the project for iOS:</p>
+<div class="highlight"><pre><span></span>ionic platform add ios
+ionic build ios
+</pre></div>
+
+
+<p>This will create a <code>.xcodeproj</code> file in <code>/platform/ios</code>. Optionally, you can install and run the iOS simulator to run the app within an on-screen iDevice of choice:</p>
+<div class="highlight"><pre><span></span>npm install -g ios-sim
+ionic emulate ios
+</pre></div>
+
+
+<p>To get the project running on a physical iDevice, previously you would have had to sign up for a $99 developer license, then build/load the project onto the device from within XCode. However, Ionic has recently released a wonderful workaround in their <a href="http://ionicframework.com/blog/view-app-is-alive/">Ionic View for iOS</a>.</p>
+<p>With the Ionic View app, you can first sign up for an account with Ionic <a href="https://apps.ionic.io/signup">here</a>, then <a href="https://itunes.apple.com/us/app/ionic-view/id849930087">download the free app</a> from the iTunes store onto your device of choice. Finally, just run:</p>
+<p><code>ionic upload</code></p>
+<p>You'll need to authenticate your Ionic account, then the project will be uploaded <a href="http://apps.ionic.io/projects">here</a> and available for viewing/testing from within Ionic View on the iOS device!</p>
+<h2>Run it on Android</h2>
+<p>First, let's get dependencies set up. We'll need:</p>
+<ul>
+<li><a href="http://ant.apache.org/bindownload.cgi">ant</a>; run <code>ant -version</code> to check if you have it already</li>
+<li>the <a href="http://developer.android.com/sdk/index.html">Android SDK</a>; if you're using brew, run <code>brew install android-sdk</code></li>
+<li>all default selected packages from Android's package manager. Run <code>android</code> to enter the manager; you may need to run this command multiple times to re-enter the package manager and get all the defaults installed.</li>
+</ul>
+<p>Now we can add <code>android</code> as a platform to the Ionic project:</p>
+<p><code>ionic platform add android</code></p>
+<p>If you get the error: 
+<code>Error: ANDROID_HOME is not set and "android" command not in your PATH.</code></p>
+<p>You'll need to add the path to <code>android</code> to your <code>PATH</code>. To find the right location, run <code>android</code> and note the root folder of the SDK, then find the full path to the specific tool; for me, having installed through <code>brew</code>, the path to add was <code>/usr/local/Cellar/android-sdk/r21.1/tools</code></p>
+<p>Now we can build the project for Android:</p>
+<p><code>ionic build android</code></p>
+<p>Optionally, if you want to use an Android emulator to test on various devices, we can set up an "AVD" - an Android Virtual Device. Full details are available <a href="http://developer.android.com/tools/devices/managing-avds-cmdline.html">here</a>, but the short version is:</p>
+<ul>
+<li>Run <code>android list targets</code> to get a list of possible images along with IDs</li>
+<li>Choose an image and run <code>android create avd -n {name} -t {ID}</code>, where {name} is for instance "myandroid" and {ID} is the target ID number.</li>
+<li>Some platforms have multiple ABIs (like choosing an API, but at the machine code level), in which case you'll need to specify one using the <code>-b</code> flag</li>
+</ul>
+<p>As an example, I used:
+<code>android create avd -n andefault1 -t 2 -b default/armeabi-v7a</code></p>
+<p>Finally, spin up the emulator:</p>
+<p><code>ionic emulate android</code></p>
+<p>To get the app running on a physical Android device, plug the device into USB and run:</p>
+<p><code>ionic run android</code></p>
+<p>If nothing happens, you might need to swipe the device's top menu down and select an option like "charge only" mode. You can use the Android debugger to list all available devices and check if the phone is being recognized:</p>
+<p><code>adb devices -l</code></p>
+<h2>Roll your own Sass</h2>
+<p>We've still got a default template! We can customize the styling of the app using <a href="http://sass-lang.com/guide">Sass</a>. To get set up, first run this intuitive command:</p>
+<p><code>ionic setup sass</code></p>
+<p>All of our Sass will be loaded in the file <code>./scss/ionic.app.scss</code> - this will point to <code>www/lib/ionic/scss</code> for <em>many</em> separate SCSS files that can all be customized in style. Take a look at the color definitions at the top of <code>www/lib/ionic/scss/_variables.scss</code>:</p>
+<div class="highlight"><pre><span></span><span class="nv">$light</span><span class="o">:</span>                           <span class="mh">#fff</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$stable</span><span class="o">:</span>                          <span class="mh">#f8f8f8</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$positive</span><span class="o">:</span>                        <span class="mh">#4a87ee</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$calm</span><span class="o">:</span>                            <span class="mh">#43cee6</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$balanced</span><span class="o">:</span>                        <span class="mh">#66cc33</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$energized</span><span class="o">:</span>                       <span class="mh">#f0b840</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$assertive</span><span class="o">:</span>                       <span class="mh">#ef4e3a</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$royal</span><span class="o">:</span>                           <span class="mh">#8a6de9</span> <span class="nv">!default</span><span class="err">;</span>
+<span class="nv">$dark</span><span class="o">:</span>                            <span class="mh">#444</span> <span class="nv">!default</span><span class="err">;</span>
+</pre></div>
+
+
+<p>For a quick and highly visible win, we can change around the hex codes in this file to modify the app's main color palette.</p>
+<p>Running <code>ionic serve</code> will use <a href="http://gulpjs.com/">gulp</a> to check for and automatically recompile any Sass changes.</p>
+<h2>Set up CoffeeScript</h2>
+<p>At TrackMaven, we write a lot of <a href="http://coffeescript.org/">CoffeeScript</a> instead of raw JavaScript; this tends to save a lot of time/eyesore/etc if you know what you're doing, especially coming from a Python background. So, let's set up this Ionic project to compile <code>coffee</code> files into JS!</p>
+<p>First, some minor updates to the main page, <code>index.html</code>:</p>
+<div class="highlight"><pre><span></span><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="p">&lt;</span><span class="nt">html</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">&quot;utf-8&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;viewport&quot;</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+
+    <span class="p">&lt;</span><span class="nt">link</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;css/ionic.app.css&quot;</span> <span class="na">rel</span><span class="o">=</span><span class="s">&quot;stylesheet&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;lib/ionic/js/ionic.bundle.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;cordova.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;js/app.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+
+  <span class="p">&lt;</span><span class="nt">body</span> <span class="na">ng-app</span><span class="o">=</span><span class="s">&quot;app&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">ion-nav-view</span><span class="p">&gt;&lt;/</span><span class="nt">ion-nav-view</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</pre></div>
+
+
+<p>Here we just renamed <code>ng-app</code> from "starter" and point to a (future) compiled <code>app.js</code> file rather than individual JS files.</p>
+<p>Now, move the current <code>app.js</code> and <code>controllers.js</code> files to a new folder <code>/www/coffee</code> and rename then to have <code>.coffee</code> extensions. We could leave them as-is, since JavaScript is valid CoffeeScript, but let's convert them to actual CoffeeScript so that we can more easily make modifications later.</p>
+<p><code>app.coffee</code> ends up looking something like:</p>
+<div class="highlight"><pre><span></span><span class="nx">angular</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s">&#39;app&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;ionic&#39;</span><span class="p">,</span> <span class="s">&#39;app.controllers&#39;</span><span class="p">])</span>
+
+<span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="nf">($ionicPlatform) -&gt;</span>
+  <span class="nx">$ionicPlatform</span><span class="p">.</span><span class="nx">ready</span> <span class="nf">-&gt;</span>
+    <span class="c1"># Hide the accessory bar by default (remove this to show the accessory bar above the keyboard</span>
+    <span class="c1"># for form inputs)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">cordova</span> <span class="o">&amp;&amp;</span> <span class="nb">window</span><span class="p">.</span><span class="nx">cordova</span><span class="p">.</span><span class="nx">plugins</span><span class="p">.</span><span class="nx">Keyboard</span><span class="p">)</span>
+      <span class="nx">cordova</span><span class="p">.</span><span class="nx">plugins</span><span class="p">.</span><span class="nx">Keyboard</span><span class="p">.</span><span class="nx">hideKeyboardAccessoryBar</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">StatusBar</span><span class="p">)</span>
+      <span class="c1"># org.apache.cordova.statusbar required</span>
+      <span class="nx">StatusBar</span><span class="p">.</span><span class="nx">styleDefault</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="p">.</span><span class="nx">config</span><span class="p">(</span><span class="nf">($stateProvider, $urlRouterProvider) -&gt;</span>
+  <span class="nx">$stateProvider</span><span class="p">.</span><span class="nx">state</span><span class="p">(</span><span class="s">&#39;app&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nv">url: </span><span class="s">&quot;/app&quot;</span><span class="p">,</span>
+    <span class="nv">abstract: </span><span class="kc">true</span><span class="p">,</span>
+    <span class="nv">templateUrl: </span><span class="s">&quot;templates/menu.html&quot;</span><span class="p">,</span>
+    <span class="nv">controller: </span><span class="s">&#39;AppCtrl&#39;</span>
+  <span class="p">}</span>
+  <span class="p">).</span><span class="nx">state</span><span class="p">(</span><span class="s">&#39;app.search&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nv">url: </span><span class="s">&quot;/search&quot;</span><span class="p">,</span>
+    <span class="nv">views: </span><span class="p">{</span>
+      <span class="s">&#39;menuContent&#39;</span><span class="o">:</span> <span class="p">{</span>
+        <span class="nv">templateUrl: </span><span class="s">&quot;templates/search.html&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="p">).</span><span class="nx">state</span><span class="p">(</span><span class="s">&#39;app.browse&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nv">url: </span><span class="s">&quot;/browse&quot;</span><span class="p">,</span>
+    <span class="nv">views: </span><span class="p">{</span>
+      <span class="s">&#39;menuContent&#39;</span><span class="o">:</span> <span class="p">{</span>
+        <span class="nv">templateUrl: </span><span class="s">&quot;templates/browse.html&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="p">).</span><span class="nx">state</span><span class="p">(</span><span class="s">&#39;app.playlists&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nv">url: </span><span class="s">&quot;/playlists&quot;</span><span class="p">,</span>
+    <span class="nv">views: </span><span class="p">{</span>
+      <span class="s">&#39;menuContent&#39;</span><span class="o">:</span> <span class="p">{</span>
+        <span class="nv">templateUrl: </span><span class="s">&quot;templates/playlists.html&quot;</span><span class="p">,</span>
+        <span class="nv">controller: </span><span class="s">&#39;PlaylistsCtrl&#39;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="p">).</span><span class="nx">state</span><span class="p">(</span><span class="s">&#39;app.single&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nv">url: </span><span class="s">&quot;/playlists/:playlistId&quot;</span><span class="p">,</span>
+    <span class="nv">views: </span><span class="p">{</span>
+      <span class="s">&#39;menuContent&#39;</span><span class="o">:</span> <span class="p">{</span>
+        <span class="nv">templateUrl: </span><span class="s">&quot;templates/playlist.html&quot;</span><span class="p">,</span>
+        <span class="nv">controller: </span><span class="s">&#39;PlaylistCtrl&#39;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">})</span>
+
+  <span class="c1"># if none of the above states are matched, use this as the fallback</span>
+  <span class="nx">$urlRouterProvider</span><span class="p">.</span><span class="nx">otherwise</span><span class="p">(</span><span class="s">&#39;/app/playlists&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+
+
+<p>While our <code>controllers.coffee</code> file is as follows:</p>
+<div class="highlight"><pre><span></span><span class="nx">angular</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s">&#39;app.controllers&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+<span class="p">.</span><span class="nx">controller</span><span class="p">(</span><span class="s">&#39;AppCtrl&#39;</span><span class="p">,</span> <span class="nf">($scope, $ionicModal, $timeout) -&gt;</span>
+  <span class="c1"># Form data for the login modal</span>
+  <span class="nv">$scope.loginData = </span><span class="p">{}</span>
+
+  <span class="c1"># Create the login modal that we will use later</span>
+  <span class="nx">$ionicModal</span><span class="p">.</span><span class="nx">fromTemplateUrl</span><span class="p">(</span><span class="s">&#39;templates/login.html&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nv">scope: </span><span class="nx">$scope</span>
+  <span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="nf">(modal) -&gt;</span>
+    <span class="nv">$scope.modal = </span><span class="nx">modal</span>
+  <span class="p">)</span>
+
+  <span class="c1"># Triggered in the login modal to close it</span>
+  <span class="nv">$scope.closeLogin = </span><span class="nf">-&gt;</span>
+    <span class="nx">$scope</span><span class="p">.</span><span class="nx">modal</span><span class="p">.</span><span class="nx">hide</span><span class="p">()</span>
+
+  <span class="c1"># Open the login modal</span>
+  <span class="nv">$scope.login = </span><span class="nf">-&gt;</span>
+    <span class="nx">$scope</span><span class="p">.</span><span class="nx">modal</span><span class="p">.</span><span class="nx">show</span><span class="p">()</span>
+
+  <span class="c1"># Perform the login action when the user submits the login form</span>
+  <span class="nv">$scope.doLogin = </span><span class="nf">-&gt;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;Doing login&#39;</span><span class="p">,</span> <span class="nx">$scope</span><span class="p">.</span><span class="nx">loginData</span><span class="p">)</span>
+    <span class="nx">$scope</span><span class="p">.</span><span class="nx">closeLogin</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="p">.</span><span class="nx">controller</span><span class="p">(</span><span class="s">&#39;PlaylistsCtrl&#39;</span><span class="p">,</span> <span class="nf">($scope) -&gt;</span>
+    <span class="nv">$scope.playlists = </span><span class="p">[</span>
+      <span class="p">{</span> <span class="nv">title: </span><span class="s">&#39;Reggae&#39;</span><span class="p">,</span> <span class="nv">id: </span><span class="mi">1</span> <span class="p">},</span>
+      <span class="p">{</span> <span class="nv">title: </span><span class="s">&#39;Chill&#39;</span><span class="p">,</span> <span class="nv">id: </span><span class="mi">2</span> <span class="p">},</span>
+      <span class="p">{</span> <span class="nv">title: </span><span class="s">&#39;Dubstep&#39;</span><span class="p">,</span> <span class="nv">id: </span><span class="mi">3</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="p">.</span><span class="nx">controller</span><span class="p">(</span><span class="s">&#39;PlaylistCtrl&#39;</span><span class="p">,</span> <span class="nf">($scope, $stateParams) -&gt;</span>
+<span class="p">)</span>
+</pre></div>
+
+
+<p>Now we need to set up CoffeeScript auto-compilation to get our <code>.coffee</code> files loaded into <code>app.js</code> whenever a change is made. In <code>/gulpfile.js</code>, add the following:</p>
+<p>At the top with the other global variable declarations:
+<code>var coffee = require('gulp-coffee');</code></p>
+<p>Add a folder to the compilation paths:</p>
+<div class="highlight"><pre><span></span>var paths = {
+  sass: [&#39;./scss/**/*.scss&#39;],
+  coffee: [&#39;./www/**/*.coffee&#39;]
+};
+</pre></div>
+
+
+<p>Add <code>coffee</code> to the <code>watch</code> task:</p>
+<div class="highlight"><pre><span></span>gulp.task(&#39;watch&#39;, function() {
+  gulp.watch(paths.sass, [&#39;sass&#39;]);
+  gulp.watch(paths.coffee, [&#39;coffee&#39;]);
+});
+</pre></div>
+
+
+<p>Then add the full <code>coffee</code> task:</p>
+<div class="highlight"><pre><span></span>gulp.task(&#39;coffee&#39;, function(done) {
+  gulp.src(paths.coffee)
+  .pipe(coffee({bare: true}).on(&#39;error&#39;, gutil.log))
+  .pipe(concat(&#39;app.js&#39;))
+  .pipe(gulp.dest(&#39;./www/js&#39;))
+  .on(&#39;end&#39;, done)
+})
+</pre></div>
+
+
+<p>Finally, you'll need to add <code>gulp-coffee</code>:
+<code>npm install gulp-coffee --save</code></p>
+<p>Then make sure that <code>gulp-coffee</code> has been added to <code>package.json</code> as a dependency. Now run <code>ionic serve</code> and make changes to the <code>.coffee</code> files to automatically recompile <code>app.js</code> and reload the app!</p>
+<h2>Add custom icons and splash screen</h2>
+<p>This step used to be a hassle to manage, but Ionic has <a href="http://ionicframework.com/blog/automating-icons-and-splash-screens/">recently automated</a> nearly the entire process:</p>
+<ul>
+<li>Add a root <code>resources</code> directory to the project</li>
+<li>In <code>resources</code>, add a 192x192px or larger <code>icon.png</code> file (or <code>.psd</code>, <code>.ai</code>)</li>
+<li>In <code>resources</code>, add a 2208x2208px or larger <code>splash.png</code> file (or <code>.psd</code>, <code>.ai</code>)</li>
+<li>Run <code>ionic resources</code> to automatically generate all the appropriate files</li>
+<li>Add the <code>--icon</code> or <code>--splash</code> options to update only one set of resource</li>
+</ul>
+<p>This <a href="http://ionicframework.com/blog/automating-icons-and-splash-screens/">post</a> from Ionic has more details around the particular design aspects, but that's about it!</p>
+<h3>Some possible next steps...</h3>
+<ul>
+<li>Set up an actual login page with authentication with <a href="http://jamesbrewer.io/2014/09/22/json-web-token-authentication-part-one/">JSON Web Tokens</a></li>
+<li>Use Angular <a href="https://docs.angularjs.org/api/ng/service/$http">$http</a> requests to load in some external data</li>
+<li>Add in <a href="http://ionicframework.com/docs/api/directive/ionInfiniteScroll/">infinite scroll</a> to query endless paginated data (what else are smartphones for?)</li>
+<li><a href="http://ionicframework.com/docs/guide/publishing.html">Publish your app</a> </li>
+<li>????</li>
+<li>Profit!</li>
+</ul>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/mobile/">mobile</a>, <a href="/tag/ionic/">ionic</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image fletcher-heisler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Fletcher Heisler</h3>
+<p class="well-content">I am the VP of Engineering at <a href="http://trackmaven.com/">TrackMaven</a> and founder of <a href="https://realpython.com/">Real Python</a>.</p>
+<p class="well-content">You can follow me on <a href="https://twitter.com/fheisler">Twitter</a> and find a few of my open-source projects on <a href="https://github.com/fheisler">GitHub</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Making a Mockery of Python - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Making a Mockery of Python</h2>
+  <p class="blog-post-meta single">Posted on <strong>December 01, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/jon-evans/">Jon Evans</a><br>Category: <a href="/category/testing/">Testing</a> | <a href="http://engineroom.trackmaven.com/blog/making-a-mockery-of-python/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>Today we will be talking about mocking. No, not the joke at someone else's expense kind. Mocking is a technique to temporarily replace <strong>real</strong> parts of our code with <strong>fake</strong>, simpler parts, so that we can check that the rest of the parts are working as we intend. Here we'll consider some simple use cases for mocking in Python tests, and try to show how this extremely useful technique can make us better at testing.</p>
+<h2>Why do we mock?</h2>
+<p>When we carry out unit testing, our goal is to test a small section of code - for example a function or class method - in isolation. In other words, we should only be testing the code that is contained in said function. If we rely on calls to other pieces of code in our test, then we find ourselves in an unfortunate situation where changes to the nested code can break the test, despite the code of the function being tested remaining the same. This is best illustrated by example:</p>
+<div class="highlight"><pre><span></span><span class="c1"># function.py</span>
+<span class="k">def</span> <span class="nf">add_and_multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+
+    <span class="n">addition</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
+    <span class="n">multiple</span> <span class="o">=</span> <span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">addition</span><span class="p">,</span> <span class="n">multiple</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span>
+
+<span class="c1"># test.py</span>
+<span class="kn">import</span> <span class="nn">unittest</span>
+
+
+<span class="k">class</span> <span class="nc">MyTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">test_add_and_multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">5</span>
+
+        <span class="n">addition</span><span class="p">,</span> <span class="n">multiple</span> <span class="o">=</span> <span class="n">add_and_multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">addition</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="n">multiple</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>$ python test.py
+.
+----------------------------------------------------------------------
+Ran <span class="m">1</span> <span class="nb">test</span> in 0.001s
+
+OK
+</pre></div>
+
+
+<p>In the simple case above, we have a function that adds and multiplies two numbers, and returns both the sum and the multiple. The <code>add_and_multiply</code> function calls a second function, <code>multiply</code> to perform the multiplication operation.</p>
+<p>Suppose we decided that we wanted to dispense with 'traditional' mathematics, and redefine our multiply function to always add three to the numbers being multiplied.</p>
+<p>Our new 'multiplication' function looks like this:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">3</span>
+</pre></div>
+
+
+<p>Now we encounter a problem. Our test code hasn't changed. The function we are supposedly testing hasn't changed. However, the <code>test_add_and_multiply</code> test will now fail:</p>
+<div class="highlight"><pre><span></span>$ python test.py
+<span class="nv">F</span>
+<span class="o">======================================================================</span>
+FAIL: test_add_and_multiply <span class="o">(</span>__main__.MyTestCase<span class="o">)</span>
+----------------------------------------------------------------------
+Traceback <span class="o">(</span>most recent call last<span class="o">)</span>:
+  File <span class="s2">&quot;test.py&quot;</span>, line 13, in test_add_and_multiply
+    self.assertEqual<span class="o">(</span>15, multiple<span class="o">)</span>
+AssertionError: <span class="m">15</span> !<span class="o">=</span> 18
+
+----------------------------------------------------------------------
+Ran <span class="m">1</span> <span class="nb">test</span> in 0.001s
+
+FAILED <span class="o">(</span><span class="nv">failures</span><span class="o">=</span>1<span class="o">)</span>
+</pre></div>
+
+
+<p>The issue here is that our original test was not a <em>true</em> unit test. Despite intending only to test our outer function, we are implicitly testing the inner function as well, since our desired result depends on its behaviour. This may seem like a pointless distinction in the simple case above, but in a situation where we are testing a complex piece of logic - for example, a Django view function that calls various different inner functions based on certain conditionals - it becomes more important to separate the testing of the view logic from the results of the function calls.</p>
+<p>There are two ways to solve this problem. We either ignore it, call our unit test an integration test and move on, or we can turn to <strong>mocking</strong>. The disadvantage of the first course of action is that an integration test only tells us something is broken somewhere along the line of function calls - it makes it much harder to identify where the issue lies. This is not to say that integration tests aren't useful, because they are. However, unit tests and integration tests solve different problems, and should be used in tandem. So if we want to be good testers, we choose the alternative: the <code>mock</code> library.</p>
+<h2>What is mock?</h2>
+<p><code>mock</code> is a Python package so awesome, it was added to the standard library in Python 3. For those of us peasants still toiling in the UnicodeError-strewn fields of Python 2.x, you can install it through pip:</p>
+<div class="highlight"><pre><span></span>pip install <span class="nv">mock</span><span class="o">==</span>1.0.1
+</pre></div>
+
+
+<p>There are many different ways to use <code>mock</code>. We can use it to monkey-patch functions, create fake objects, or even as a context manager. All of these implementations serve one overall purpose - replacing parts of our code with replicas that we can use to a) gather information and b) return contrived responses.</p>
+<p><code>mock</code>'s <a href="http://www.voidspace.org.uk/python/mock/">documentation</a> can be quite dense, and finding information on a particular use-case can be tricky. Here, we'll take a look at a common scenario - replacing a nested function to check its inputs and outputs.</p>
+<h2>We will mock you</h2>
+<p>Let's rewrite our unit test, using the power of mock. Then we'll discuss what's happening, and why it is useful from the perspective of testing.</p>
+<div class="highlight"><pre><span></span><span class="c1"># test.py</span>
+<span class="kn">import</span> <span class="nn">mock</span>
+<span class="kn">import</span> <span class="nn">unittest</span>
+
+
+<span class="k">class</span> <span class="nc">MyTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;multiply&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_add_and_multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_multiply</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">5</span>
+
+        <span class="n">mock_multiply</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="mi">15</span>
+
+        <span class="n">addition</span><span class="p">,</span> <span class="n">multiple</span> <span class="o">=</span> <span class="n">add_and_multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="n">mock_multiply</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">addition</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="n">multiple</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+
+<p>At this point, we can change the multiply function to do whatever we want - it could return the multiple plus three, return None, or return your <a href="https://www.youtube.com/watch?v=q-yxOFIkgxU&amp;t=1m15s">favourite line from Monty Python and the Holy Grail</a> - and our test above will still pass. This is because we are <strong>mocking</strong> the multiply function. In true unit test fashion, we don't care about what happens inside the multiply function; from the perspective of our <code>add_and_multiply</code> test, we only care that <code>multiply</code> was called with the right arguments. We assume (hopefully, correctly) that what is going on <em>inside</em> <code>multiply</code> is itself being tested by another unit test.</p>
+<h2>What just happened?</h2>
+<p>The syntax used above may look confusing at first. Let's consider the relevant lines more closely:</p>
+<div class="highlight"><pre><span></span><span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;multiply&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_add_and_multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_multiply</span><span class="p">):</span>
+</pre></div>
+
+
+<p>We've used the <code>mock.patch</code> decorator to <strong>replace</strong> <code>multiply</code> with a mock object. We then insert this into our test by passing it as an argument, which we've called <code>mock_multiply</code>. Within the context of the test, any call to <code>multiply</code> will be redirected to our <code>mock_multiply</code> object.</p>
+<p>Cries of terror - "How can we be replacing a function with an object!?" Don't worry! This is Python, so functions <strong>are</strong> objects. Normally, when we call <code>multiply()</code>, we are using the <code>__call__</code> method of the <code>multiply</code> function object. With our mock in place, however, our <code>multiply()</code> call instead calls the <code>__call__</code> method of our mock object.</p>
+<div class="highlight"><pre><span></span><span class="n">mock_multiply</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="mi">15</span>
+</pre></div>
+
+
+<p>In order to get our mock function to return anything, we need to specify the <code>return_value</code> attribute. This tells our mock object what to give back when it is called.</p>
+<div class="highlight"><pre><span></span><span class="n">addition</span><span class="p">,</span> <span class="n">multiple</span> <span class="o">=</span> <span class="n">add_and_multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="n">mock_multiply</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+</pre></div>
+
+
+<p>In the test, we then called our outer function, <code>add_and_multiply</code>. This will call our nested <code>multiply</code> function, and if we've mocked it correctly, the call will be received by our mock object instead. To check that this has happened, we can rely on a smart feature of mock objects - they store any arguments that they were called with. The <code>assert_called_once_with</code> method of the mock object is a nice shortcut to check, as the name suggests, if the object was called once with a specific set of arguments. If it was, we are happy and the test passes. If it wasn't, <code>assert_called_once_with</code> will let us know by raising an <code>AssertionError</code>.</p>
+<h2>What have we achieved?</h2>
+<p>Well, quite a lot actually. Firstly, we have <strong>isolated</strong> the functionality of <code>add_and_multiply</code> from the functionality of <code>multiply</code> by mocking the nested function. This means that our unit test is only testing logic specifically inside <code>add_and_multiply</code>. Only changes to the code of <code>add_and_multiply</code> will affect the success or failure of the test.</p>
+<p>Secondly, we can now control the outputs of our nested function to make sure our outer function handles different cases. For example, our <code>add_and_multiply</code> function might have conditional logic based on the result of <code>multiply</code>: say, we only want to return a value if the multiple is greater than 10. We could easily test that our logic works by generating contrived outputs from <code>multiply</code> to mimic the case where the multiple is less than 10, and the case where the multiple is greater. This feature of mock objects is great for testing control flow.</p>
+<p>Finally, we can now make sure that our mocked function is being called the correct number of times, with the correct arguments. Since our mock object is sitting where our <code>multiply</code> function normally sits, we know that any calls made to it would normally go to <code>multiply</code>. When testing a complex function, it is extremely reassuring to make sure that each step is being called correctly.</p>
+<hr />
+<p>The example given above only scratches the surface of what <code>mock</code> can do. In an upcoming post, we'll look at some more in-depth examples of using the library, as well as identifying some pitfalls to avoid. Meanwhile, questions are welcome in the comments, or on Twitter!</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/testing/">testing</a>, <a href="/tag/mock/">mock</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image jonathan-evans-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Jon Evans</h3>
+<p class="well-content">I am a Visiting Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Enjoys making things with Python and Coffeescript. Can be found on <a href="https://twitter.com/jwpe">Twitter</a> and <a href="https://github.com/jwpe">Github</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

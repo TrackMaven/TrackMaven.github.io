@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>The Engine Room - TrackMaven</title><link href="http://engineroom.trackmaven.com/" rel="alternate"></link><link href="http://engineroom.trackmaven.com/feeds/fred-battista.atom.xml" rel="self"></link><id>http://engineroom.trackmaven.com/</id><updated>2014-11-09T00:00:00+01:00</updated><entry><title>3-2-1 Backup of Postgres on AWS to S3 and offsite server</title><link href="http://engineroom.trackmaven.com/blog/3-2-1-backup-of-postgres-on-aws-to-s3-and-offsite-server/" rel="alternate"></link><published>2014-11-09T00:00:00+01:00</published><updated>2014-11-09T00:00:00+01:00</updated><author><name>Fred Battista</name></author><id>tag:engineroom.trackmaven.com,2014-11-09:blog/3-2-1-backup-of-postgres-on-aws-to-s3-and-offsite-server/</id><summary type="html">&lt;blockquote&gt;
+&lt;p&gt;3 copies, 2 different media types, 1 offsite, boom, good to go.&lt;/p&gt;
+&lt;p&gt;--&lt;cite&gt; Abraham Lincoln&lt;/cite&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Backups should be straightforward, automatic, have few moving parts, adhere to the &lt;a href="http://www.dpbestflow.org/backup/backup-overview#321"&gt;3-2-1 rule&lt;/a&gt;, and, most importantly, facilitate easy recovery.&lt;/p&gt;
+&lt;p&gt;TrackMaven's applications run on AWS and we've always stored several backups on S3. However, best practices suggest thaht you keep a backup offsite if it is feasible to do so.&lt;/p&gt;
+&lt;p&gt;This post details one way to keep multiple backup copies of your database both in S3 and on an offsite server.&lt;/p&gt;
+&lt;h2&gt;Preparing your database machine for backup&lt;/h2&gt;
+&lt;h3&gt;Create an additional mountpoint for your backup data&lt;/h3&gt;
+&lt;p&gt;Unless you have a significant amount of extra space on your DB machines we suggest creating and mounting an additional EBS volume to handle your backup date.&lt;/p&gt;
+&lt;p&gt;The instructions to &lt;a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-creating-volume.html"&gt;create&lt;/a&gt;, &lt;a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-creating-volume.html"&gt;attach&lt;/a&gt;, and &lt;a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-attaching-volume.html"&gt;mount&lt;/a&gt; another EBS volume (hereafter referrered to as &lt;code&gt;/YOUR_BACKUP_POINT&lt;/code&gt;) are covered by Amazon in the provided links.&lt;/p&gt;
+&lt;h3&gt;Setting permissions on new volume&lt;/h3&gt;
+&lt;p&gt;Because you created the mountpoint with &lt;code&gt;sudo&lt;/code&gt; it will be owned by &lt;code&gt;root&lt;/code&gt;; we need it to be readable/writeable by other users. Which other users should have access?&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;pg_dump&lt;/code&gt; is the process we will use to write the backup, and it should be run by the &lt;code&gt;postgres&lt;/code&gt; user so it does not have to authenticate database access (annoying and difficult to do securely within &lt;code&gt;crontab&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;We created a new group &lt;code&gt;BACKUPUSERS&lt;/code&gt; and added our &lt;code&gt;ssh_user&lt;/code&gt; and &lt;code&gt;postgres&lt;/code&gt; to it with these commands:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo groupadd BACKUPUSERS
+sudo usermod -a -G BACKUPUSERS YOUR_SSH_USER
+sudo usermod -a -G BACKUPUSERS postgres
+sudo chgrp -R BACKUPUSERS /YOUR_BACKUP_POINT
+sudo chmod -R 770 /YOUR_BACKUP_POINT
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;H/T to &lt;a href="http://superuser.com/questions/280994/give-write-permissions-to-multiple-users-on-a-folder-in-ubuntu"&gt;this superuser answer&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Initial backup&lt;/h2&gt;
+&lt;p&gt;If you haven't created an IAMS user with only S3 permissions, we suggest that you do that now because you'll need the keys for the next step.&lt;/p&gt;
+&lt;p&gt;Give the backup S3 user both read and write permissions if you feel your local machine is secure enough to warrant it.&lt;/p&gt;
+&lt;p&gt;Install and configure the S3 command line client on the DB machine:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get install s3cmd
+s3cmd --configure
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Put the following script somewhere on your actual DB machine - uncomment the logging lines if you are running manually and want to debug the script behavior.&lt;/p&gt;
+&lt;p&gt;This script will remove yesterday's backups, dump a current copy of the database, compress the current copy of the database, and ship it to S3.&lt;/p&gt;
+&lt;h3&gt;DB backup cron script&lt;/h3&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ch"&gt;#!/bin/bash&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Backup script to pg_dump&lt;/span&gt;
+&lt;span class="c1"&gt;# &amp;#39;YOUR_DATABASE&amp;#39; db. Assumes that&lt;/span&gt;
+&lt;span class="c1"&gt;# this is on the crontab of the&lt;/span&gt;
+&lt;span class="c1"&gt;# postgres user so no authentication&lt;/span&gt;
+&lt;span class="c1"&gt;# is necessary.&lt;/span&gt;
+
+
+&lt;span class="nv"&gt;PGDUMP&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;/usr/bin/pg_dump
+&lt;span class="nv"&gt;DATABASE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;YOUR_DATABASE
+&lt;span class="nv"&gt;BACKUP_FOLDER&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;/YOUR_BACKUP_FOLDER
+&lt;span class="nv"&gt;EXPORTFILE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$BACKUP_FOLDER&lt;/span&gt;/pg_dump_&lt;span class="sb"&gt;`&lt;/span&gt;date +%F&lt;span class="sb"&gt;`&lt;/span&gt;.sql
+&lt;span class="nv"&gt;COMPRESSEDFILE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$EXPORTFILE&lt;/span&gt;.tgz
+&lt;span class="nv"&gt;BUCKET&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;s3://YOUR_S3_BUCKET/OPTIONAL_FOLDER/
+&lt;span class="nv"&gt;S3CMD&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;/usr/bin/s3cmd
+&lt;span class="nv"&gt;LOG_FILE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$BACKUP_FOLDER&lt;/span&gt;/backup_log_file.txt
+&lt;span class="nv"&gt;DATE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;date +%F&lt;span class="sb"&gt;`&lt;/span&gt;
+
+&lt;span class="nv"&gt;REMOVE_TIME&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;date +%T&lt;span class="sb"&gt;`&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; Time: &lt;span class="nv"&gt;$REMOVE_TIME&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; Removing yesterdays...
+&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="nv"&gt;$DATE&lt;/span&gt;,RemovingOld,&lt;span class="nv"&gt;$REMOVE_TIME&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;
+rm &lt;span class="nv"&gt;$BACKUP_FOLDER&lt;/span&gt;/*.sql*
+
+&lt;span class="nv"&gt;DUMP_TIME&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;date +%T&lt;span class="sb"&gt;`&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; Time: &lt;span class="nv"&gt;$DUMP_TIME&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; Dumping...
+&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="nv"&gt;$DATE&lt;/span&gt;,DumpBegan,&lt;span class="nv"&gt;$DUMP_TIME&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;
+&lt;span class="nv"&gt;$PGDUMP&lt;/span&gt; -c -f &lt;span class="nv"&gt;$EXPORTFILE&lt;/span&gt; &lt;span class="nv"&gt;$DATABASE&lt;/span&gt;
+
+&lt;span class="nv"&gt;TAR_TIME&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;date +%T&lt;span class="sb"&gt;`&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; Time: &lt;span class="nv"&gt;$TAR_TIME&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; Taring...
+&lt;span class="nv"&gt;$DATE&lt;/span&gt;,TarBegan,&lt;span class="nv"&gt;$TAR_TIME&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;
+tar -czf &lt;span class="nv"&gt;$COMPRESSEDFILE&lt;/span&gt; &lt;span class="nv"&gt;$EXPORTFILE&lt;/span&gt;
+
+&lt;span class="nv"&gt;S3_TIME&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;date +%T&lt;span class="sb"&gt;`&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; Time: &lt;span class="nv"&gt;$S3_TIME&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; s3cmd PUTTING...
+&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="nv"&gt;$DATE&lt;/span&gt;,S3Began,&lt;span class="nv"&gt;$S3_TIME&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;
+&lt;span class="nv"&gt;$S3CMD&lt;/span&gt; put &lt;span class="nv"&gt;$COMPRESSEDFILE&lt;/span&gt; &lt;span class="nv"&gt;$BUCKET&lt;/span&gt;
+&lt;span class="nv"&gt;$S3CMD&lt;/span&gt; put -f &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt; &lt;span class="nv"&gt;$BUCKET&lt;/span&gt;
+
+&lt;span class="nv"&gt;DONE_TIME&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;date +%T&lt;span class="sb"&gt;`&lt;/span&gt;
+&lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="nv"&gt;$DATE&lt;/span&gt;,Done,&lt;span class="nv"&gt;$DONE_TIME&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class="nv"&gt;$LOG_FILE&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+
+&lt;h3&gt;Set up the crontab&lt;/h3&gt;
+&lt;p&gt;Become the &lt;code&gt;postgres&lt;/code&gt; user so you don't have to authenticate in your crontab to access the database:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;su - postgres&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Access your crontab to edit:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;crontab -e&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Then add this line to your crontab, which will run your script at the path you specify at 1AM every night:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;`0 1 * * * /YOUR_BACKUP_POINT/YOUR_BACKUP_SCRIPT.sh&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;Pull the backup to remote server&lt;/h2&gt;
+&lt;p&gt;Install &lt;code&gt;s3cmd&lt;/code&gt; on your local/offsite box, configure it, and create a backup directory structure if you're game.&lt;/p&gt;
+&lt;h3&gt;Get/ifnotthenwait/tryagain&lt;/h3&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ch"&gt;#!/bin/bash&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Script to test if today&amp;#39;s backup HAS&lt;/span&gt;
+&lt;span class="c1"&gt;# occured, and has been pushed to the&lt;/span&gt;
+&lt;span class="c1"&gt;# specified S3 bucket - if it has, gets&lt;/span&gt;
+&lt;span class="c1"&gt;# the file. If not present, wait 30 min&lt;/span&gt;
+&lt;span class="c1"&gt;# and try again.&lt;/span&gt;
+&lt;span class="c1"&gt;# Assumptions/Notes:&lt;/span&gt;
+&lt;span class="c1"&gt;#  * Only checks 10 times after&lt;/span&gt;
+&lt;span class="c1"&gt;#    initial run&lt;/span&gt;
+&lt;span class="c1"&gt;#  * Assumes that s3cmd has been&lt;/span&gt;
+&lt;span class="c1"&gt;#    configured prior to cron init&lt;/span&gt;
+
+
+&lt;span class="nv"&gt;BUCKET&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;s3://YOUR_BUCKET
+&lt;span class="nv"&gt;DATE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;date +%F&lt;span class="sb"&gt;`&lt;/span&gt;
+&lt;span class="nv"&gt;FILE&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;pg_dump_&lt;span class="nv"&gt;$DATE&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;.sql.tgz&lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="nv"&gt;FULLPATH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$BUCKET$FILE&lt;/span&gt;
+&lt;span class="nv"&gt;EXISTS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;false&lt;/span&gt;
+&lt;span class="nv"&gt;WAIT_TIME_IN_SECONDS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;1800
+&lt;span class="nv"&gt;RETRYS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0
+&lt;span class="nv"&gt;LOCALPATH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;yourlocalpathhere/&lt;span class="nv"&gt;$FILE&lt;/span&gt;
+
+&lt;span class="nb"&gt;echo&lt;/span&gt; Checking &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;$FULLPATH&lt;/span&gt;
+
+get_file_from_s3 &lt;span class="o"&gt;()&lt;/span&gt;
+&lt;span class="o"&gt;{&lt;/span&gt;
+  &lt;span class="c1"&gt;#echo getting $FULLPATH&lt;/span&gt;
+  s3cmd get &lt;span class="nv"&gt;$FULLPATH&lt;/span&gt; &lt;span class="nv"&gt;$LOCALPATH&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+check_if_backup_complete &lt;span class="o"&gt;()&lt;/span&gt;
+&lt;span class="o"&gt;{&lt;/span&gt;
+  s3cmd info &lt;span class="nv"&gt;$FULLPATH&lt;/span&gt; &amp;gt;/dev/null 2&amp;gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;1
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="nv"&gt;$?&lt;/span&gt; -eq &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt;
+    &lt;span class="nv"&gt;EXISTS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;true&lt;/span&gt;
+    get_file_from_s3
+  &lt;span class="k"&gt;fi&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+
+&lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="nv"&gt;$RETRYS&lt;/span&gt; -lt &lt;span class="m"&gt;10&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+  check_if_backup_complete
+  &lt;span class="k"&gt;if&lt;/span&gt; ! &lt;span class="nv"&gt;$EXISTS&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt;
+    sleep &lt;span class="nv"&gt;$WAIT_TIME_IN_SECONDS&lt;/span&gt;
+    &lt;span class="o"&gt;((&lt;/span&gt; RETRYS++ &lt;span class="o"&gt;))&lt;/span&gt;
+    &lt;span class="c1"&gt;# echo $RETRYS&lt;/span&gt;
+  &lt;span class="k"&gt;else&lt;/span&gt;
+    &lt;span class="nb"&gt;break&lt;/span&gt;
+  &lt;span class="k"&gt;fi&lt;/span&gt;
+&lt;span class="k"&gt;done&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+
+&lt;p&gt;You can run this script as any user which has been authed for S3.&lt;/p&gt;
+&lt;h2&gt;Keep only 3 backups on S3&lt;/h2&gt;
+&lt;p&gt;It is important to not let S3 balloon with tons of backups!&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ch"&gt;#!/bin/bash&lt;/span&gt;
+
+&lt;span class="nv"&gt;FILES&lt;/span&gt;&lt;span class="o"&gt;=()&lt;/span&gt;
+FILES+&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;s3cmd ls s3://trackmaven-prod-db/pg_dump/ &lt;span class="p"&gt;|&lt;/span&gt; grep tgz &lt;span class="p"&gt;|&lt;/span&gt; awk &lt;span class="s1"&gt;&amp;#39;{print $4}&amp;#39;&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;
+
+&lt;span class="c1"&gt;#echo $FILES&lt;/span&gt;
+
+&lt;span class="nv"&gt;SORTEDFILES&lt;/span&gt;&lt;span class="o"&gt;=(&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; el in &lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;FILES&lt;/span&gt;&lt;span class="p"&gt;[@]&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;do&lt;/span&gt;
+        &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="nv"&gt;$el&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;done&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; sort -Vr &lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="o"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="o"&gt;((&lt;/span&gt; &lt;span class="nv"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="p"&gt;;&lt;/span&gt; i &amp;lt; &lt;span class="si"&gt;${#&lt;/span&gt;&lt;span class="nv"&gt;SORTEDFILES&lt;/span&gt;&lt;span class="p"&gt;[@]&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt; &lt;span class="p"&gt;;&lt;/span&gt; i++ &lt;span class="o"&gt;))&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="nv"&gt;$i&lt;/span&gt; -gt &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt;
+    &lt;span class="c1"&gt;#echo Removing ${SORTEDFILES[$i]}&lt;/span&gt;
+    s3cmd del &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;SORTEDFILES&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
+  &lt;span class="k"&gt;fi&lt;/span&gt;
+&lt;span class="k"&gt;done&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+
+&lt;h2&gt;Keep only n backups on the remote machine&lt;/h2&gt;
+&lt;p&gt;Then you need to delete the files on the local machine that you don't need anymore:&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt; 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ch"&gt;#!/bin/bash&lt;/span&gt;
+
+&lt;span class="nv"&gt;FILES&lt;/span&gt;&lt;span class="o"&gt;=()&lt;/span&gt;
+&lt;span class="nv"&gt;FILES&lt;/span&gt;&lt;span class="o"&gt;=(&lt;/span&gt; /your_backup_location/* &lt;span class="o"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;#echo $FILES&lt;/span&gt;
+
+&lt;span class="nv"&gt;SORTEDFILES&lt;/span&gt;&lt;span class="o"&gt;=(&lt;/span&gt; &lt;span class="k"&gt;$(&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; el in &lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;FILES&lt;/span&gt;&lt;span class="p"&gt;[@]&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;do&lt;/span&gt;
+        &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="nv"&gt;$el&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;done&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; sort -Vr &lt;span class="k"&gt;)&lt;/span&gt; &lt;span class="o"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="o"&gt;((&lt;/span&gt; &lt;span class="nv"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="p"&gt;;&lt;/span&gt; i &amp;lt; &lt;span class="si"&gt;${#&lt;/span&gt;&lt;span class="nv"&gt;SORTEDFILES&lt;/span&gt;&lt;span class="p"&gt;[@]&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt; &lt;span class="p"&gt;;&lt;/span&gt; i++ &lt;span class="o"&gt;))&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="nv"&gt;$i&lt;/span&gt; -gt &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt;
+    &lt;span class="c1"&gt;#echo Removing ${SORTEDFILES[$i]}&lt;/span&gt;
+    s3cmd del &lt;span class="si"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;SORTEDFILES&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;
+  &lt;span class="k"&gt;fi&lt;/span&gt;
+&lt;span class="k"&gt;done&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+
+&lt;p&gt;Add these scripts to your &lt;code&gt;crontab&lt;/code&gt; as well and you are good to go.&lt;/p&gt;</summary><category term="ops"></category><category term="backups"></category><category term="best-practices"></category></entry><entry><title>Building a Testable D3 Charting Application Within Angular.js</title><link href="http://engineroom.trackmaven.com/blog/building-a-testable-d3-charting-application-within-angularjs/" rel="alternate"></link><published>2014-10-04T00:00:00+02:00</published><updated>2014-10-04T00:00:00+02:00</updated><author><name>Fred Battista</name></author><id>tag:engineroom.trackmaven.com,2014-10-04:blog/building-a-testable-d3-charting-application-within-angularjs/</id><summary type="html">&lt;h2&gt;Why this post?&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Most of the examples on d3js.org are much smaller, proof of concept applications which funcion well as a single page app but not necessarily in the reuseable context of a larger, more complex app.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;This post assumes familiarity with Angular.js' concepts of Controllers, Directives, and Services, Jasmine's testing framework, and d3 concepts like axis, scale, and path.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;d3.js' customizeability can rapidly lead to a fragile codebase within larger applications. We provide some suggestions on how to modularize and then test a charting application.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;em&gt;nb: At TrackMaven, we use Coffeescript+Angular to manage our frontend.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Graphing is a core feature of TrackMaven's application. As we added more graph types, it became obvious that a monolithic hunk of coffeescript was not an ideal foundation.&lt;/p&gt;
+&lt;p&gt;Our solution was to separate the graphing bloc into separate factories, services, and directories to enable code reuse and testing along the lines of the actual components of the SVG itself.&lt;/p&gt;
+&lt;p&gt;We think that everything that was previously a section of chained definitions (e.g &lt;code&gt;element.attr('','')..&lt;/code&gt;) could be promoted to its own function within a service.&lt;/p&gt;
+&lt;p&gt;This means that our graph's many layers and variables which were all previously defined within a single directive like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;svg = d3.select(element[0])
+y = d3.scale.linear()
+x = d3.time.scale()
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;now look like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;angular.module(&amp;#39;graphing.directives.visualizer&amp;#39;)
+
+.service(&amp;#39;graphBase&amp;#39;, (dateFilter) -&amp;gt;
+    class GraphBase
+        generate: (element) -&amp;gt;
+            @generateSvg(element)
+            @generateAxises()
+            ...
+
+        generateSvg: (element) -&amp;gt;
+            @svg = d3.select(element[0])
+            ...
+
+        generateAxises: -&amp;gt;
+            @yAxis = d3.svg.axis()
+            @xAxis = d3.svg.axis()
+            ...
+
+        svgContainer: -&amp;gt;
+            @svgContainer = @svg.append(&amp;quot;svg:g&amp;quot;)
+                .attr(&amp;quot;class&amp;quot;, &amp;quot;svg-container&amp;quot;)
+                .attr(&amp;quot;transform&amp;quot;, &amp;quot;translate(#{@sidePadding})&amp;quot;)
+
+            return @svgContainer
+
+        graphContainer: -&amp;gt;
+            @graphContainer = @svgContainer.append(&amp;quot;svg:g&amp;quot;)
+                .attr(&amp;quot;class&amp;quot;, &amp;quot;graph-canvas&amp;quot;)
+                .attr(&amp;quot;id&amp;quot;, &amp;quot;graph-svg&amp;quot;)
+
+            @graphContainer.append(&amp;quot;svg:rect&amp;quot;)
+                .attr(&amp;quot;width&amp;quot;, @width)
+                .attr(&amp;quot;height&amp;quot;, @height)
+                .style(&amp;quot;fill&amp;quot;, &amp;#39;white&amp;#39;)
+
+            return @graphContainer
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The advantages of this approach may not be immediately obvious (extra work! why?) but within the context of d3 and enterprise software they are important.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;1. Separate definition of container from its initialization&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Firstly, the defenition/creation of graphical layers has been separated from their initialization. This can be somewhat confusing but is a consequence of the &lt;a href="http://www.w3.org/TR/SVG/"&gt;SVG spec&lt;/a&gt; having no support for a z-index. There is no way to change the 'stacked' order of elements on an SVG except by manually redrawing the elements again in the correct order.&lt;/p&gt;
+&lt;p&gt;By separating the container definition from the initialization it becomes much easier to correctly draw and test the order of SVG elements. This is of especial importance when clipping masks are in play - untangling long code blocks is annoying.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;2. Easily change and re-initialize graph types&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;With the returned values on the graphBase object it becomes trivial to alter the properties as needed. If I need to give the svgContainer a green background it is as simple as: &lt;code&gt;@svgContainer.style('background-color','green')&lt;/code&gt; WHEREVER I need to make the change. I do not need to hunt for the block where the &lt;code&gt;svgContainer&lt;/code&gt; is created.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;3. Testing is easier/feasible&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Testing is easier with this approach. Previously, any change in the monolithic code block had the potential ta affect every test. With the modular approach, your integration tests may fail but you unit tests have a much higher chance of survival.&lt;/p&gt;
+&lt;p&gt;With the above setup it is possible to mock and test the creation of elements with specific ids on any given SVG. This is very difficult to do with a giant block of code.&lt;/p&gt;
+&lt;p&gt;For instance, this is the first test of our graph tooltips:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    it &amp;#39;should correctly render tooltips&amp;#39;, -&amp;gt;
+        tooltips.redraw(mockData)
+        tips = d3.select(element[0]).selectAll(&amp;#39;.graph-tooltip&amp;#39;)[0]
+        expect(tips.length).toEqual(1)
+        expect(tips[0].style[&amp;#39;left&amp;#39;]).toEqual(&amp;#39;32px&amp;#39;)
+        expect(tips[0].style[&amp;#39;top&amp;#39;]).toEqual(&amp;#39;10px&amp;#39;)
+        expect(element[0].innerText).toContain(&amp;#39;100&amp;#39;)
+        expect(element[0].innerText).toContain(&amp;#39;XXXXXX-BBBBB&amp;#39;)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;None of the above is revolutionary&lt;/h3&gt;
+&lt;p&gt;Nothing above is news: modularizing and re-factoring for code reuse is good practice generally. However, client side graphing code can be difficult to unravel and we think that our approach of service modularization is helpful.&lt;/p&gt;
+&lt;h3&gt;Next steps&lt;/h3&gt;
+&lt;p&gt;We expect to go deeper with this modularization as we add graph types. Specifically, we want to modularize the &lt;code&gt;brush&lt;/code&gt; interaction to flex and activate across different SVG elements. Creating a separate &lt;code&gt;graphBrush&lt;/code&gt; service is likely.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Additional resources which cover similar material:&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://misoproject.com/d3-chart/"&gt;d3.chart: a framework for building reusable charts with d3.js&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://bost.ocks.org/mike/chart/"&gt;Mike Bostok's 'Towards Reuseable Charts'&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://pivotallabs.com/d3-test-driven-development/"&gt;d3 and Test-Driven-Development&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/stevenalexander/d3-testing"&gt;Great set of example code in vanilla JS on Jasmine-driven testing of D3&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="charting"></category><category term="d3"></category><category term="best-practices"></category><category term="testing"></category></entry></feed>

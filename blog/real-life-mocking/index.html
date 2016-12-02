@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Real Life Mocking - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Real Life Mocking</h2>
+  <p class="blog-post-meta single">Posted on <strong>February 24, 2015</strong> by <a href="http://engineroom.trackmaven.com/author/jon-evans/">Jon Evans</a><br>Category: <a href="/category/testing/">Testing</a> | <a href="http://engineroom.trackmaven.com/blog/real-life-mocking/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>In a <a href="http://engineroom.trackmaven.com/blog/making-a-mockery-of-python/">previous post</a> we discussed a basic use case for Python's fantastic <code>mock</code> library, showing how mock objects are useful for isolating components of an application and creating clean unit tests. By testing against the fake interface provided by a mock object, we can check how our functions are called, provide idealised outputs, and make sure that our unit tests are testing what we think they're testing.</p>
+<p>That said, it's unlikely that in real life, the height of complexity of our unit tests will be checking if two numbers multiply correctly. This post will cover some ways that we use <code>mock</code> in our test suite at TrackMaven, examining a common case where <code>mock</code> really shines by replacing a slow, complex, or variable component - the HTTP request.</p>
+<h2>What are we testing?</h2>
+<p>Building a web application that gathers data from an external source invariably involves interfacing with third-party APIs. Fortunately, making HTTP requests is a piece of cake in Python thanks to the <a href="http://docs.python-requests.org/en/latest/">requests</a> library. However, when the time comes to test functionality that talks to an external service, the last thing we want is to actually talk to it. We care about testing how <em>our</em> code handles different, specific responses. Tying these tests to real requests means that we have no control over what type of response is returned: a test of code that handles a 200 OK response will not pass if the API endpoint is down, changes its structure, or returns a different response. While it may be important for us to know the state of an API, it is outside the scope of testing our own code's handling of responses.</p>
+<p>For this reason, we can use <code>mock</code> to replace the result of an API call. There are many ways to do this, so let's look at an example:</p>
+<div class="highlight"><pre><span></span><span class="c1"># client.py</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="k">class</span> <span class="nc">MyAPIClient</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A simple API client for querying corgi data&quot;&quot;&quot;</span>
+
+    <span class="n">base_url</span> <span class="o">=</span> <span class="s1">&#39;http://api.corgidata.com&#39;</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="s1">&#39;v1&#39;</span>
+
+    <span class="k">def</span> <span class="nf">_make_uri</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the URL for a resource based on the API class&#39;s parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">base_uri</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="n">resource</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make a GET request to an endpoint defined by &#39;url&#39;&quot;&quot;&quot;</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_breed_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">breed</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return information about a specific breed of corgi&quot;&quot;&quot;</span>
+        <span class="n">resource</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;breeds&#39;</span><span class="p">,</span> <span class="n">breed</span><span class="p">])</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_url</span><span class="p">(</span><span class="n">resource</span><span class="o">=</span><span class="n">resource</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span>
+</pre></div>
+
+
+<p>The above is a simple API client class for querying an (unfortuately fictional) API of corgi data. We are interested in testing the flow of our <code>_get</code> function to make sure that it:</p>
+<ul>
+<li>Calls the correct URL</li>
+<li>Attempts to deserialize the response JSON into Python</li>
+</ul>
+<p>Currently our function is pretty simple. We could test it by just pointing it at the URL, calling it and checking that the response looks like we expect. However, this will be slow, and put our test at the mercy of a fickle third-party service. Instead, we will use <code>mock</code> to patch <code>requests.get</code> and replace it with our own, fake response object.</p>
+<p>N.B. if you are following along at home, you want a directory structure like this:</p>
+<div class="highlight"><pre><span></span>.
+├── client.py
+├── __init__.py
+└── tests.py
+</pre></div>
+
+
+<h2>Testing a successful call</h2>
+<p>Here is the contents of our <code>tests.py</code> file:</p>
+<div class="highlight"><pre><span></span><span class="c1"># tests.py</span>
+<span class="kn">import</span> <span class="nn">mock</span>
+<span class="kn">import</span> <span class="nn">unittest</span>
+
+<span class="kn">from</span> <span class="nn">client</span> <span class="kn">import</span> <span class="n">MyAPIClient</span>
+
+
+<span class="k">class</span> <span class="nc">ClientTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">MyAPIClient</span><span class="p">()</span>
+
+    <span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.requests.get&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_get_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_get</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test getting a 200 OK response from the _get method of MyAPIClient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Construct our mock response object, giving it relevant expected</span>
+        <span class="c1"># behaviours</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">Mock</span><span class="p">()</span>
+        <span class="n">expected_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;breeds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;pembroke&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;cardigan&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+        <span class="n">mock_response</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">expected_dict</span>
+
+        <span class="c1"># Assign our mock response as the result of our patched function</span>
+        <span class="n">mock_get</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock_response</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;http://api.corgidata.com/breeds/&#39;</span>
+        <span class="n">response_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="c1"># Check that our function made the expected internal calls</span>
+        <span class="n">mock_get</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mock_response</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">call_count</span><span class="p">)</span>
+
+        <span class="c1"># If we want, we can check the contents of the response</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">response_dict</span><span class="p">,</span> <span class="n">expected_dict</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+
+<p>What is going on in this test?</p>
+<p>First of all, we see the hopefully familiar <code>mock.patch</code> decorator - however, the argument to the decorator looks slightly different to the example in the <a href="http://engineroom.trackmaven.com/blog/making-a-mockery-of-python/">previous post</a>. This is because we are patching a function in a different file from the test case: the <code>client.requests.get</code> represents the path to the method we want to replace - in this case in <code>client.py</code>. But hang on! <code>requests.get</code> is defined in a third party package, not in our <code>client</code> module! This is true, but the <code>requests</code> module is being imported into <code>client.py</code> and called from that location. We always patch our functions, classes and methods in the place that they are <em>used</em>, rather than where they are defined. This can be a confusing distinction, but it is actually fairly well explained in the <a href="https://docs.python.org/3/library/unittest.mock.html#where-to-patch">mock documentation</a>.</p>
+<p>Once we get inside our test, we have to set up our fake response object. To do this, we use mock in a different way: as an object. <code>mock.Mock()</code> gives us an object, similar to that dropped in by the <code>patch</code> decorator, to which we can attach arbitrary methods and variables. In our HTTP test, we use this mock object to recreate the requisite behaviors we want from our idealised response. Unlike making a real HTTP call, we now have complete control of the structure and behavior of the response, which is perfect for testing the logic of our <code>_get</code> method.</p>
+<p>In order to make sure that it's working properly, we need to make sure that the mock response from our patched <code>requests.get</code> has a <code>.json</code> method. The following lines let us define an ideal response, and assign it as the return value of our mock response's <code>json</code> method:</p>
+<div class="highlight"><pre><span></span><span class="n">expected_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;breeds&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;pembroke&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;cardigan&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+<span class="n">mock_response</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">expected_dict</span>
+</pre></div>
+
+
+<p>This can be extremely useful if we need to define a deserialized response that looks like real data, for example if we want to check how it is manipulated later in the function.</p>
+<p>After calling the <code>_get</code> method in our test, we check that it called the <code>requests.get</code> method, as well as making sure it called our <code>.json</code> method on our mock response.</p>
+<div class="highlight"><pre><span></span><span class="n">mock_get</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mock_response</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">call_count</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Notice how we can make sure that any mock methods are called with the correct arguments, in this case making sure we requested the correct <code>url</code>.</p>
+<p>The final piece of the puzzle is to check that the result of <code>_get</code> is the same as our dummy deserialized data:</p>
+<div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">response_dict</span><span class="p">,</span> <span class="n">expected_dict</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Since our <code>_get</code> method doesn't modify the data in any way, this is currently a guaranteed result. However, it is still useful as a regression test. If we change the method in any way, we want to make sure that we still end up with our deserialized data being passed out. Checking outputs gives us the confidence to change the method, knowing that our test will tell us if we make a breaking change.</p>
+<h2>Testing an exception</h2>
+<p>This seems like an awful lot of time and effort to test a two-line function. Our test is considerably longer than our <code>_get</code> method - what's the point of that?</p>
+<p>The value of testing code in this way is that it allows us to easily iterate on both the code, as well as the tests, while being confident that our code still works. As soon as our code gets more complicated, we can make sure that it is still working in a way that we expect, and it's easy to specify new conditions that we want our test to meet.</p>
+<p>Let's illustrate this with an example. What if we want to add some error handling to our <code>_get</code> method, to make sure that we can recover from an HTTP error like a 404 or a 500? Here's our new, expanded method:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Make a GET request to an endpoint defined by &#39;url&#39;&quot;&quot;&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_handle_http_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We can also define a HTTP error handler method on <code>MyAPIClient</code>. For the purposes of this demonstration, it doesn't matter what this does since we will be mocking it out - in practice, this could raise a custom exception or perform cleanup logic:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_handle_http_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle a HTTP error&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</pre></div>
+
+
+<p>How can we test that this new error handling works? First, let's rerun our success test and make sure that our changes haven't broken successful HTTP request handling. Once we've confirmed that this works, we can write a second test to prove that errors are handled correctly:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="k">class</span> <span class="nc">CustomHTTPException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ClientTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+<span class="o">...</span>
+
+    <span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.MyAPIClient._handle_http_error&#39;</span><span class="p">)</span>
+    <span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.requests.get&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_get_http_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_get</span><span class="p">,</span> <span class="n">mock_http_error_handler</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test getting a HTTP error in the _get method of MyAPIClient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Construct our mock response object, giving it relevant expected</span>
+        <span class="c1"># behaviours</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">Mock</span><span class="p">()</span>
+        <span class="n">http_error</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">()</span>
+        <span class="n">mock_response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="n">http_error</span>
+
+        <span class="c1"># Assign our mock response as the result of our patched function</span>
+        <span class="n">mock_get</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock_response</span>
+
+        <span class="c1"># Make our patched error handler raise a custom exception</span>
+        <span class="n">mock_http_error_handler</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="n">CustomHTTPException</span><span class="p">()</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;http://api.corgidata.com/breeds/&#39;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="n">CustomHTTPException</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="c1"># Check that our function made the expected internal calls</span>
+        <span class="n">mock_get</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mock_response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="o">.</span><span class="n">call_count</span><span class="p">)</span>
+
+        <span class="c1"># Make sure we did not attempt to deserialize the response</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">mock_response</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">call_count</span><span class="p">)</span>
+
+        <span class="c1"># Make sure our HTTP error handler is called</span>
+        <span class="n">mock_http_error_handler</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">(</span><span class="n">http_error</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Our second test looks a lot like the test for a successful call. We are still making a mock response and giving it behaviours, and then making sure our method calls the correct internal functions. However, this test introduces a couple of new mocking tactics. Firstly, we are stacking <code>mock.patch</code> decorators:</p>
+<div class="highlight"><pre><span></span><span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.MyAPIClient._handle_http_error&#39;</span><span class="p">)</span>
+<span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.requests.get&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_get_http_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_get</span><span class="p">,</span> <span class="n">mock_http_error_handler</span><span class="p">):</span>
+</pre></div>
+
+
+<p>Thanks to the power of decorators, we can mock an arbitrary number of functions with the <code>patch</code> method. In this case, we want to make sure that our client's <code>_handle_http_error</code> is called if an error is caught, as well as continuing to mock <code>requests.get</code>. We can just stack another decorator above our original one, and add a new argument to our test - the second mocked function. It is pretty crucial to note the <strong>order</strong> of the decorators and arguments to the test. The <strong>top-most</strong> mocked function corresponds to the <strong>right-most</strong> test argument. When mocking multiple functions, make sure that the decoratos and arguments are correctly lined up, or you might see some confusing and unexpected behaviour!</p>
+<p>Secondly, let's take a closer look at the mock response's <code>raise_for_status</code> definition:</p>
+<div class="highlight"><pre><span></span><span class="n">http_error</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">()</span>
+<span class="n">mock_response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="n">http_error</span>
+</pre></div>
+
+
+<p>We are no longer using <code>return_value</code>; instead, the method has a <code>side_effect</code>. <code>side_effect</code> is a very cool mocking trick that allows us to assign an exception to a method - when the method is called, the exception will be raised. In our test, this gives us the power to enter the <code>except</code> case of our <code>_get</code> method, and make sure that our handling of <code>HTTPError</code> is correct. <code>side_effect</code> has other powers, which we will take a look at in our third and final example.</p>
+<p>Finally, we are making our patched <code>_handle_http_error</code> function throw a custom exception as its side effect. We can check that this exception was raised using a context manager:</p>
+<div class="highlight"><pre><span></span><span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="n">CustomHTTPException</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+</pre></div>
+
+
+<p>This makes sure that the <code>_get</code> function exits with our custom exception when we introduce an <code>HTTPError</code>. Not only does this provide additional checking that our mock handler was called: it also allows us to make sure that further changes to the function won't break the error handling effects we expect.</p>
+<h2>Testing a loop</h2>
+<p>Our <code>_get</code> method is looking more robust to exceptions, and we've tested it for both successful and erroneous HTTP responses. However, connections are tricky beasts - they could disappear temporarily due to the vagaries of the internets, or take a very long time to return a response due to server or network slowness. We want our <code>_get</code> method to deal with these facts, and retry a call if it fails with a connection error or timeout. Here's the final version of the method:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Make a GET request to an endpoint defined by &#39;url&#39;&quot;&quot;&quot;</span>
+
+    <span class="k">while</span> <span class="n">retries</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_http_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">,</span>
+                <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">Timeout</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">retries</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">retries</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_connection_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+
+
+<p>And let's not forget to add a <code>_handle_connection_error</code> method to <code>MyAPIClient</code>, to deal with the situation where we've used up all of our retries. Once again, this will just be a stub for the purposes of this example:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_handle_connection_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle a persistent connection error or timeout&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</pre></div>
+
+
+<p>Now we're going to need to test to make sure our <code>_get</code> method handles <code>ConnectionError</code> or <code>Timeout</code> correctly. Our first two tests should still pass to cover the success and <code>HTTPError</code> cases. Can't we just add a third test that throws one of the two errors we are trying to handle? Unfortunately, no we can't. There is more than one new logical pathway specified by our retry loop:</p>
+<ul>
+<li>A <code>ConnectionError</code> or <code>Timeout</code> is raised 3 times and then <code>_handle_connection_error</code> is called.</li>
+<li>A <code>ConnectionError</code> or <code>Timeout</code> is raised 1 or 2 times and then a request is successful.</li>
+<li>A <code>ConnectionError</code> or <code>Timeout</code> is raised 1 or 2 times and then a request returns a <code>HTTPError</code>.</li>
+</ul>
+<p>All of these imply us needing our mock <code>requests.get</code> to be called multiple times in a test, and sometimes to return or raise different things! What madness is this?!</p>
+<p>First let's consider the test for a persistent connection failure:</p>
+<div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="k">class</span> <span class="nc">CustomConnException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">ClientTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+<span class="o">...</span>
+
+<span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.MyAPIClient._handle_connection_error&#39;</span><span class="p">)</span>
+<span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.requests.get&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_get_connection_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_get</span><span class="p">,</span> <span class="n">mock_conn_error_handler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test getting a persistent connection error in the _get method of</span>
+<span class="sd">    MyAPIClient.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Make our patched `requests.get` raise a connection error</span>
+    <span class="n">conn_error</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">()</span>
+    <span class="n">mock_get</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="n">conn_error</span>
+
+    <span class="c1"># Make our patched error handler raise a custom exception</span>
+    <span class="n">mock_conn_error_handler</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="n">CustomConnException</span><span class="p">()</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;http://api.corgidata.com/breeds/&#39;</span>
+    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="n">CustomConnException</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+
+    <span class="c1"># Check that our function made the expected internal calls</span>
+    <span class="n">expected_calls</span> <span class="o">=</span> <span class="p">[</span><span class="n">mock</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">3</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected_calls</span><span class="p">,</span> <span class="n">mock_get</span><span class="o">.</span><span class="n">call_args_list</span><span class="p">)</span>
+
+    <span class="c1"># Make sure our connection error handler is called</span>
+    <span class="n">mock_conn_error_handler</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">(</span><span class="n">conn_error</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We've now made our patched <code>requests.get</code> raise a <code>ConnectionError</code> every time it is called. In this version of the test, we want to end up by calling our error handler <strong>after</strong> having called <code>requests.get</code> not once, but three times. How can we check that the patched function was called the correct number of times, with the correct arguments each time? We need to use mock's <code>call</code> object. This allows us to create an arbitary representation of a call to a mocked function. If we make a list of these <code>call</code> objects, we can compare the list to the <code>call_args_list</code> property of our patched function to see if it was called how we expected, in the order we expected.</p>
+<div class="highlight"><pre><span></span><span class="n">expected_calls</span> <span class="o">=</span> <span class="p">[</span><span class="n">mock</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">3</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected_calls</span><span class="p">,</span> <span class="n">mock_get</span><span class="o">.</span><span class="n">call_args_list</span><span class="p">)</span>
+</pre></div>
+
+
+<p>While in this case we are only checking three of the same call, in practice we could check any combination of calls with different arguments.</p>
+<p>Now we're on the home stretch. We just need to cover the case of a <code>ConnectionError</code> occurring, followed by a successful call. This means we're going to have to manipulate our patched <code>requests.get</code> into first raising an error, and then returning a mock result when called again.</p>
+<div class="highlight"><pre><span></span>    <span class="nd">@mock.patch</span><span class="p">(</span><span class="s1">&#39;client.requests.get&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_get_connection_error_then_success</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_get</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test getting a connection error, then a successful response,</span>
+<span class="sd">        in the _get method of MyAPIClient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Construct our mock response object for the success case</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">Mock</span><span class="p">()</span>
+        <span class="n">expected_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;breeds&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;pembroke&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;cardigan&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+        <span class="n">mock_response</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">expected_dict</span>
+
+        <span class="c1"># Make an instance of ConnectionError for our failure case</span>
+        <span class="n">conn_error</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">()</span>
+
+        <span class="c1"># Give our patched get a list of behaviours to display</span>
+        <span class="n">mock_get</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="p">[</span><span class="n">conn_error</span><span class="p">,</span> <span class="n">conn_error</span><span class="p">,</span> <span class="n">mock_response</span><span class="p">]</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;http://api.corgidata.com/breeds/&#39;</span>
+        <span class="n">response_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="c1"># Check that our function made the expected internal calls</span>
+        <span class="n">expected_calls</span> <span class="o">=</span> <span class="p">[</span><span class="n">mock</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected_calls</span><span class="p">,</span> <span class="n">mock_get</span><span class="o">.</span><span class="n">call_args_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mock_response</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">call_count</span><span class="p">)</span>
+
+        <span class="c1"># Check the result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">response_dict</span><span class="p">,</span> <span class="n">expected_dict</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Here we've combined the mock behaviours from our success example and our connection error example, and used <code>side_effect</code> to get the patched <code>requests.get</code> to exhibit different behaviours on consecutive calls. On the first two calls to the function in the test, it will raise a <code>ConnectionError</code>. On the final call, it will return a good response.</p>
+<div class="highlight"><pre><span></span><span class="n">mock_get</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="p">[</span><span class="n">conn_error</span><span class="p">,</span> <span class="n">conn_error</span><span class="p">,</span> <span class="n">mock_response</span><span class="p">]</span>
+</pre></div>
+
+
+<p>Wow. Now we have a test suite that covers successful responses, intermittent connections, and HTTP error responses, without having to make a single real HTTP call. These tests will <strong>always</strong> behave the same, and should allow us to make whatever changes we want to our <code>_get</code> method while being sure that the core functionality stays solid. If you want to practice what we've learned, try defining the final test case: a <code>ConnectionError</code> followed by a <code>HTTPError</code>.</p>
+<h2>Wait, what did we test?</h2>
+<p>We've covered a whole load of things in this post, using a constructed example to illustrate:</p>
+<ul>
+<li><code>mock.Mock()</code> as an object</li>
+<li>stacking <code>mock.patch</code> decorators</li>
+<li>using <code>side_effect</code> to raise an exception from a patched function</li>
+<li>using <code>mock.call()</code> to test calling a function multiple times</li>
+<li>using <code>side_effect</code> (again) to return different behaviours from the same function when it is called multiple times</li>
+</ul>
+<p>Phew! That's a lot to take in. In real life, you may not want to unit test each of your functions with this level of rigour. However, in some cases, you might. Imagine that <code>MyAPIClient</code> is not just for looking up corgi data. Instead, it's an abstract class that powers all of your requests to many different APIs. With a comprehensive test suite of its core behaviours, we can be extremely confident that anything build on top of it will be stable and fail gracefully in a variety of failure modes. All this, thanks to the power and flexibility of the mock library! It's no wonder they included it in Python 3!</p>
+<hr />
+<p>How do you use mock to make awesome unit tests? Did I miss a particularly powerful feature you'd like me to talk about? Just want to make 'mock' puns? Visit the comments section!</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/testing/">testing</a>, <a href="/tag/mock/">mock</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image jonathan-evans-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Jon Evans</h3>
+<p class="well-content">I am a Visiting Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Enjoys making things with Python and Coffeescript. Can be found on <a href="https://twitter.com/jwpe">Twitter</a> and <a href="https://github.com/jwpe">Github</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

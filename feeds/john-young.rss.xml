@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel><title>The Engine Room - TrackMaven</title><link>http://engineroom.trackmaven.com/</link><description></description><lastBuildDate>Tue, 29 Mar 2016 00:00:00 +0200</lastBuildDate><item><title>Upgrade Elasticsearch Cluster Software and Hardware Seamlessly</title><link>http://engineroom.trackmaven.com/blog/upgrade-es-seamlessly/</link><description>&lt;h2&gt;Cluster Upgrades&lt;/h2&gt;
+&lt;p&gt;Our decision to begin using Elasticsearch came from a fairly typical use case for the popular distributed data store. We had hundreds of millions of pieces of content, and we wanted to support text search across them. As we set out to migrate our architecture from a relatively simple Postgres setup to include indexing all of our documents into Elasticsearch, we did what everyone does: we played around with Elasticsearch and made some educated guesses about the hardware we would need to support our needs. And, as so often happens, we underestimated.&lt;/p&gt;
+&lt;p&gt;Our biggest problem was with disk space usage. Indexing our dataset took up far more space than we had anticipated, and we needed to increase the size of the attached AWS EBS volumes on our instances. Somewhat less pressing than our disk usage was our heap usage, which made us want to increase the memory of each node so that we could allocate more heap space (friendly reminder that it's &lt;a href="https://www.elastic.co/guide/en/elasticsearch/guide/current/heap-sizing.html#compressed_oops"&gt;very important&lt;/a&gt; to keep your heap size below 30.5gb). All the while, we were several versions behind: running 1.3.2 at the time of 1.7.0's release. We figured the best course of action was to tackle all three of these problems at the same time, without any cluster downtime.&lt;/p&gt;
+&lt;p&gt;Some caveats before we begin:
+ - This only applies to minor version upgrades, like 1.x to 1.x, or 2.x to 2.x. Major version upgrades, like 1.x to 2.x, are more complicated and require a full cluster restart.
+ - If you only have one master-eligible node, then taking it down will make your cluster very sad. If you're using the more commonly recommended number of 3 master-eligible nodes, a new one will be elected seamlessly as you take each down individually for upgrades
+ - Our infrastructure is hosted on AWS, but the underlying principles are the same across any hardware cluster
+ - If you don't already have backups of your production data, do that before thinking about any of this&lt;/p&gt;
+&lt;h2&gt;Out with the old, in with the new&lt;/h2&gt;
+&lt;p&gt;From a high level, our process looks like this:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Launch a new, larger EC2 instance based off our current node AMIs, with larger EBS volumes attached&lt;/li&gt;
+&lt;li&gt;Upgrade this instance's version of Elasticsearch&lt;/li&gt;
+&lt;li&gt;Create a new AMI for our upgraded instance&lt;/li&gt;
+&lt;li&gt;Join this new node to our production cluster&lt;/li&gt;
+&lt;li&gt;Re-allocate all shards off an older, non-upgraded node&lt;/li&gt;
+&lt;li&gt;Allow the cluster to rebalance itself&lt;/li&gt;
+&lt;li&gt;Once all nodes have been shipped off the old node, shut it down&lt;/li&gt;
+&lt;li&gt;Repeat this process of spawning new instances based off the upgraded AMI until all nodes have been upgraded&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Creating AMIs, launching instances based off of them, and changing instance/volume sizes are steps specific to AWS, and outside the scope of this post. There is a ton of great documentation around these things already available, so I will be skipping over anything detailed on them. Let's get started.&lt;/p&gt;
+&lt;p&gt;First, launch a new instance with the specs you want. It makes things easier if you base this instance off an image of a working Elasticsearch node, so that your config settings are retained and you do not forget to install any required dependencies. You don't want this node to join your cluster yet, as you still need to upgrade it. We prevented this by simply not giving it access to our Elasticsearch AWS security groups. Now, let's upgrade our version.&lt;/p&gt;
+&lt;p&gt;Elasticsearch has good &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/rolling-upgrades.html"&gt;documentation&lt;/a&gt; around how to perform a rolling version upgrade. It's best to follow their steps closely. However, since the node we're upgrading isn't a part of our cluster yet, it's much simpler. We have Elasticsearch installed from their tar packages, so we download the latest version, and place it in a directory next to our current version. We also manage our Elasticsearch processes with &lt;code&gt;supervisor&lt;/code&gt;, so we shut it down as well.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Stop supervisor:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo service supervisor stop&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Download and extract the new version:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.0.tar.gz &amp;amp;&amp;amp; tar xvzf elasticsearch-1.7.0.tar.gz &amp;amp;&amp;amp; rm -f elasticsearch-1.7.0.tar.gz &amp;amp;&amp;amp; sudo mv elasticsearch-1.7.0 /opt/elasticsearch-1.7&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Delete the new version's config, and copy over your previous config settings:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo rm /opt/elasticsearch-1.7/config/elasticsearch.yml&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo mv /opt/elasticsearch/config/elasticsearch.yml /opt/elasticsearch-1.7/config/&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Delete the previous version and put the new version in its place:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo rm -rf /opt/elasticsearch&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo mv /opt/elasticsearch-1.7 /opt/elasticsearch&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Restart supervisor:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo service supervisor start&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;With this newly upgraded node, we create an AMI of this instance so that we don't need to keep performing this manual upgrade process. All new instances going forward should be based off this upgraded image.&lt;/p&gt;
+&lt;p&gt;Now, it's time to join this node to the cluster. We add the necessary security groups and watch our cluster health (&lt;code&gt;localhost:9200/_cluster/health?pretty&lt;/code&gt;) show us what's happening. We should see a new data node join the cluster, and our cluster health change from &lt;code&gt;green&lt;/code&gt; to &lt;code&gt;yellow&lt;/code&gt;. The &lt;code&gt;yellow&lt;/code&gt; state happens because of our mismatched version numbers in the cluster. &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/rolling-upgrades.html#_step_6_wait_for_the_node_to_recover"&gt;Primary shards assigned to the newer version will not allocate their replica shards to older versioned nodes&lt;/a&gt;. With only one upgraded node, we will have unassigned replica shards. This is remedied once we have two upgraded nodes in the cluster, and health will again return to &lt;code&gt;green&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Once our new node has joined the cluster successfully, it's time to shut down one of our old nodes.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Re-allocate all shards off the node&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;curl -XPUT localhost:9200/_cluster/settings -d &amp;#39;{
+    &amp;quot;transient&amp;quot; :{
+        &amp;quot;cluster.routing.allocation.exclude._ip&amp;quot; : &amp;quot;&amp;lt;IP Address&amp;gt;&amp;quot;
+    }
+}&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Wait for the cluster to re-balance itself by watching your cluster health (&lt;code&gt;curl localhost:9200/_cluster/health?pretty&lt;/code&gt;) waiting for &lt;code&gt;relocating_shards&lt;/code&gt; to go to 0&lt;/li&gt;
+&lt;li&gt;Shut down the node&lt;/li&gt;
+&lt;li&gt;Stop and/or terminate the instance, kill the Elasticsearch process, whatever you want to do to decommision this node&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;That's it. From here, you can spawn an additional instance based off the already upgraded image, and repeat the process of disabling allocation on an older node and decommissioning them one by one. The same process applies to all nodes, whether master or client or data.&lt;/p&gt;
+&lt;p&gt;Enjoy your new cluster!&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">John Young</dc:creator><pubDate>Tue, 29 Mar 2016 00:00:00 +0200</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2016-03-29:blog/upgrade-es-seamlessly/</guid><category>elasticsearch</category><category>how-to</category></item><item><title>So you want another PostgreSQL database? (part 3)</title><link>http://engineroom.trackmaven.com/blog/so-you-want-another-postgresql-database-part-3/</link><description>&lt;p&gt;&lt;strong&gt;Read &lt;a href="/blog/so-you-want-another-postgresql-database-part-1/"&gt;Part 1&lt;/a&gt; or &lt;a href="/blog/so-you-want-another-postgresql-database-part-2/"&gt;Part 2&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;h2&gt;Tuning your PostgreSQL servers on Amazon EC2&lt;/h2&gt;
+&lt;p&gt;It will probably come as no surprise that the settings that are best for your PostgreSQL cluster are heavily dependent on your data and how you're using it. No one can say what will work best for you in every single use case, and it's up to you to profile your database to determine what does and does not work for you. With that being said, a great starting point for general use cases can be found in Christophe Pettus' talk &lt;a href="http://thebuild.com/presentations/not-your-job.pdf"&gt;PostgreSQL when it's not your job&lt;/a&gt;. If you're completely new to tuning your Postgres instances, I highly recommend using these settings as an initial profile point.&lt;/p&gt;
+&lt;p&gt;Here's a quick summary of his suggestions:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Memory settings
+* shared_buffers: Set to 25% of total system RAM (or 8GB if RAM &amp;gt; 32GB)
+* work_mem: Start at 32-64MB.
+  * Look for `temporary file` lines in logs then set it to 2-3x the size of the largest temp file you see
+* maintenance_work_mem: 10% of RAM, up to 1GB
+* effective_cache_size: 50-75% of total RAM
+
+Checkpoint settings
+* wal_buffers: 16MB
+* checkpoint_completion_target: 0.9
+* checkpoint_timeout: 10min
+* checkpoint_segments: 32
+  * Check logs for checkpoint entries. Adjust checkpoint_segments so that checkpoints happen due to timeouts rather than filling segments
+
+Planner settings
+* random_page_cost: 1.1 for Amazon EBS
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Some of these settings will naturally be somewhat confusing, and even a bit intimidating to change. My advice? Don't afraid to experiment, even if you're going outside of the 'norm' of what others say your settings should be.&lt;/p&gt;
+&lt;h2&gt;A real-world example&lt;/h2&gt;
+&lt;p&gt;When we saw huge performance slowdowns on our database, we knew we needed more aggressive caching of our data, but how would we accomplish that? The &lt;code&gt;shared_buffers&lt;/code&gt; paramater controls how much memory is dedicated to caching data in Postgres, but every online resource we found said that 8GB was as large as was feasible. Nonsense, I say!&lt;/p&gt;
+&lt;p&gt;The first step to solving any problem is determining where the problem is. We needed to be able to cache several entire tables of our database for certain heavily-used, customer facing read operations. When our data was smaller, the settings above were just fine. But as we've grown, it quickly became apparent that an 8GB cache for a 20GB table is woefully insufficient. How did we discover this? I'm glad you asked. Here is a handy SQL script to show you what is actually sitting in your shared_buffers:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SELECT
+c.relname,
+pg_size_pretty(count(*) * 8192) as buffered,
+round(100.0 * count(*) /
+(SELECT setting FROM pg_settings
+WHERE name=&amp;#39;shared_buffers&amp;#39;)::integer,1)
+AS buffers_percent,
+round(100.0 * count(*) * 8192 /
+pg_relation_size(c.oid),1)
+AS percent_of_relation
+FROM pg_class c
+INNER JOIN pg_buffercache b
+ON b.relfilenode = c.relfilenode
+INNER JOIN pg_database d
+ON (b.reldatabase = d.oid AND d.datname = current_database())
+GROUP BY c.oid,c.relname
+ORDER BY 3 DESC
+LIMIT 10;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This script will tell show us the top 10 tables being stored in our cache, ranked from highest memory usage to lowest. Especially important is the &lt;code&gt;percent_of_relation&lt;/code&gt; column. Is your most heavily read table only 65% cached? That can be a pretty big problem. For us, the additional second or two it took for customers to load a page was troublesome, but not our largest problem. This lack of caching caused our tasks to run about 300-500 milliseconds slower on average. A few hundred milliseconds added to a few million tasks quickly caused us to be overrun by tasks that ran too slowly to clear in time for the next set of tasks to be scheduled. The result? We had a task queue that would grow forever and never clear, all thanks to bad caching strategy.&lt;/p&gt;
+&lt;p&gt;We decided to increase the power of our database by bumping our EC2 instance to an &lt;code&gt;r3.4xlarge&lt;/code&gt;, giving us 16 cores and 122GB of memory. To fully utilize this much more powerful machine, we needed to tweak our settings far beyond the 'recommended' levels.&lt;/p&gt;
+&lt;p&gt;Here is what we settled on:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;### MEMORY SETTINGS
+shared_buffers = 25GB
+work_mem = 32MB
+maintenance_work_mem = 1GB
+effective_cache_size = 100GB
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And here is an action shot, using &lt;code&gt;htop&lt;/code&gt;, with the yellow coloring denoting memory reserved for our cache:
+&lt;center&gt;&lt;img alt="Database resource usage as seen by htop" src="/images/db-usage.png" /&gt;&lt;/center&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">John Young</dc:creator><pubDate>Mon, 29 Dec 2014 00:00:00 +0100</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2014-12-29:blog/so-you-want-another-postgresql-database-part-3/</guid><category>postgres</category><category>how-to</category></item><item><title>So You Want Another PostgreSQL Database? (Part 2)</title><link>http://engineroom.trackmaven.com/blog/so-you-want-another-postgresql-database-part-2/</link><description>&lt;p&gt;&lt;strong&gt;Read &lt;a href="/blog/so-you-want-another-postgresql-database-part-1/"&gt;Part 1&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;
+&lt;h2&gt;Automatic nightly base backups to Amazon S3 using WAL-E&lt;/h2&gt;
+&lt;p&gt;In the first part of this series of posts, we set up streaming replication between a primary database and a replica database by shipping WAL files between them. While functional, it lacks the robustness and safety that a production database requires. To add an additional layer of protection to our process, we ship our WAL files to S3 so that our replica can ALWAYS bring itself up to date regardless of an enormous write load on the primary or a temporary network disruption preventing the primary and replica from communicating with each other. &lt;/p&gt;
+&lt;p&gt;We also create a base backup of our database nightly and send that to S3 so that we can restore our database to any point in time we need in case of catastrophe. With a base backup and the WAL files written since that backup was taken, your database can very easily be recovered to any point in time you specify.&lt;/p&gt;
+&lt;h3&gt;S3&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;First things first, create a bucket on S3 to store our backups&lt;/li&gt;
+&lt;li&gt;Turn on versioning as a safeguard against file manipulation&lt;/li&gt;
+&lt;li&gt;Create a user in AWS IAM to have Put access to the S3 bucket&lt;/li&gt;
+&lt;li&gt;Give the user read/put access, but NOT delete access. If, for some reason, our database server is compromised and an attacker gets our AWS credentials for this user, they will be able to overwrite our files but not delete them. Thanks to versioning, overwriting of our files is a non-issue. If the name of our bucket is db-backup, a policy like this will do:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;{
+  &amp;quot;Version&amp;quot;: &amp;quot;2014-05-14&amp;quot;,
+  &amp;quot;Statement&amp;quot;: [
+    {
+      &amp;quot;Sid&amp;quot;: &amp;quot;Stmt1399394132000&amp;quot;,
+      &amp;quot;Effect&amp;quot;: &amp;quot;Allow&amp;quot;,
+      &amp;quot;Action&amp;quot;: [
+        &amp;quot;s3:GetObject&amp;quot;,
+        &amp;quot;s3:ListBucket&amp;quot;,
+        &amp;quot;s3:PutObject&amp;quot;
+      ],
+      &amp;quot;Resource&amp;quot;: [
+        &amp;quot;arn:aws:s3:::db-backup&amp;quot;,
+        &amp;quot;arn:aws:s3:::db-backup/*&amp;quot;
+      ]
+    }
+  ]
+}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Create a new user, making sure to save their AWS credentials (access key AND secret key), and add them to the newly created group&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Master and Slave Database Servers&lt;/h3&gt;
+&lt;p&gt;Install WAL-E and its dependencies, then set it up by saving your bucket name, AWS user's access key, and AWS user's secret key.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;sudo apt-get install daemontools python-dev lzop pv python-pip&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;I ran into problems with my older version of six, so just to be safe... &lt;code&gt;sudo pip install -U six&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;sudo pip install wal-e&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Set up WAL-E:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;umask u=rwx,g=rx,o=
+sudo mkdir -p /etc/wal-e.d/env
+echo &amp;quot;&amp;lt;AWS SECRET KEY&amp;gt;&amp;quot; | sudo tee /etc/wal-e.d/env/AWS_SECRET_ACCESS_KEY
+echo &amp;quot;&amp;lt;AWS ACCESS KEY&amp;gt;&amp;quot; | sudo tee /etc/wal-e.d/env/AWS_ACCESS_KEY_ID
+echo &amp;#39;s3://db-backup/&amp;#39; | sudo tee /etc/wal-e.d/env/WALE_S3_PREFIX
+sudo chown -R root:postgres /etc/wal-e.d
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;That's all there is to it when it comes to setting up WAL-E. Ensure that the following options are set correctly in /etc/postgresql/9.3/main/postgresql.conf:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;wal_level = &amp;#39;hot_standby&amp;#39;
+archive_mode = on
+archive_command = &amp;#39;envdir /etc/wal-e.d/env /usr/local/bin/wal-e wal-push %p&amp;#39;
+archive_timeout = 60
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Become the postgres user: &lt;code&gt;su - postgres&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Set up a cron job: &lt;/li&gt;
+&lt;li&gt;&lt;code&gt;crontab -e&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;0 2 * * * /usr/bin/envdir /etc/wal-e.d/env /usr/local/bin/wal-e backup-push /data/trackmaven&lt;/code&gt; will push a base backup of the master database to S3 at 2am nightly&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;We will also need to clean up our S3 bucket by deleting old base backups. This can be done manually, but can also be done with WAL-E. You will need to add Delete permissions to the bucket before WAL-E can do it, so understand the risks that are associated with that. The following command will keep the 5 most recent base backups and delete all others at 2:30am nightly. We could schedule it to run after the nightly backup like this:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;crontab -e&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;30 2 * * * /usr/bin/envdir /etc/wal-e.d/env /usr/local/bin/wal-e delete --confirm retain 5&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Continue onto &lt;a href="/blog/so-you-want-another-postgresql-database-part-3/"&gt;Part 3&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">John Young</dc:creator><pubDate>Sat, 18 Oct 2014 00:00:00 +0200</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2014-10-18:blog/so-you-want-another-postgresql-database-part-2/</guid><category>postgres</category><category>double-database</category><category>how-to</category></item><item><title>So You Want Another PostgreSQL Database? (Part 1)</title><link>http://engineroom.trackmaven.com/blog/so-you-want-another-postgresql-database-part-1/</link><description>&lt;h2&gt;Streaming replication with PostgreSQL 9.3 on Amazon EC2&lt;/h2&gt;
+&lt;p&gt;They grow up so fast, don't they? It seems like just yesterday you were setting up your PostgreSQL server and tweaking settings you barely understood to try to get the most out of your database. But now, you've got a lot more data and your traffic continues to rise, and you've decided it's time your database had a few companions to help it out. Fortunately, PostgreSQL 9 makes it rather simple to set up a primary database that can handle writes, and any number of replica databases which are read-only, stay in sync with the primary, and can be promoted to the primary in the event of failure on your primary database.&lt;/p&gt;
+&lt;p&gt;There are a lot of factors that come into play when you decide to scale your database infrastructure and they vary wildly from project to project. These are outside the scope of this post, and I'm is going to assume you have already decided on a primary/replica database setup. &lt;/p&gt;
+&lt;h2&gt;So what are we going to do?&lt;/h2&gt;
+&lt;p&gt;We are going to take our current single-database setup and turn it into a primary database with a single replica following the primary using streaming replication and WAL archiving. We will perform all read operations from the replica and all write operations to the primary. The replica will be able to take over the role of primary at any moment we need it to, and is thus known as a &lt;strong&gt;&lt;em&gt;hot standby&lt;/em&gt;&lt;/strong&gt; server.&lt;/p&gt;
+&lt;h2&gt;How it all works: understanding streaming replication&lt;/h2&gt;
+&lt;p&gt;Everything you do to your database (inserts, updates, deletes, alter table, etc.) is first recorded on disk in what is called a Write-Ahead Log, or WAL for short. Only once the WAL has been updated will any change be made to the database. In the event of a crash, you are able to recover to the exact moment of the crash by replaying the WAL files and reconstructing all changes that have been made to the database. This is the core of streaming replication.&lt;/p&gt;
+&lt;p&gt;On every write made to the primary, a WAL file is written to. The WAL file is then forwarded along to the replica. Our replica server, which operates in a kind of permanent recovery mode, is continuously listening to the primary and will reconstruct all changes made by reading the primary's WAL. By doing so, our replica database stays in sync with the primary nearly instantaneously.&lt;/p&gt;
+&lt;p&gt;It is important to note that the forwarding of WAL files is done only after a transaction has been committed to the primary and thus there will be a small period, generally less than one second, where a change has been made to the primary and is not yet reflected on the replica.&lt;/p&gt;
+&lt;h2&gt;Setting it all up&lt;/h2&gt;
+&lt;p&gt;We use &lt;a href="https://github.com/wal-e/wal-e"&gt;WAL-E&lt;/a&gt; to store backups of our database and WAL files in S3 for additional security against failure. Its setup warrants its own writeup, and is not necessary for streaming replication. I have left the WAL-E commands in the instructions below, since there is no "right" answer for how and where you store your WAL files. For instance, you can certainly store them locally on the primary and rsync them to the replica. It's incredibly easy to set up, but if your primary goes down and you can't access that server, you may not be able to have a fully current replica to promote. All that changes is the &lt;code&gt;archive_command&lt;/code&gt; on the primary and the &lt;code&gt;restore_command&lt;/code&gt; on the replica. These can be set to anything you need, so long as the primary is shipping its WALs to a place where the replica can fetch them.&lt;/p&gt;
+&lt;p&gt;Alright, let's get started.&lt;/p&gt;
+&lt;h3&gt;Perform on both primary and replica&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Launch two EC2 instances running Ubuntu Server 14.04 and install PostgreSQL&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;sudo apt-get update &amp;amp;&amp;amp; sudo apt-get upgrade&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;sudo apt-get install postgresql-9.3 postgresql-client-9.3 postgresql-contrib-9.3&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;When installed, PostgreSQL will create a user named postgres from which all further commands need to be run from. To take over the postgres user, we must first give it a password: &lt;code&gt;sudo passwd postgres&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Become the postgres user: &lt;code&gt;su - postgres&lt;/code&gt; and enter the password from the previous step&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Perform on both primary and replica&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;If you aren't using WAL-E or sending the WAL files to a third-party server, you're going to need the two servers to be able to communicate with each other via ssh without passwords for WAL files to be received by the replica (and sent, in the case of the replica being promoted to primary if primary goes down). &lt;strong&gt;This must all be done as the postgres user.&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ssh-keygen -t rsa&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;eval $('ssh-agent')&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ssh-add&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Create &lt;code&gt;authorized_keys&lt;/code&gt; file in ~/.ssh/&lt;/li&gt;
+&lt;li&gt;Copy other server's id_rsa.pub into &lt;code&gt;authorized_keys&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Test correct functionality: &lt;code&gt;ssh &amp;lt;IP_ADDRESS_OF_OTHER_SERVER&amp;gt;&lt;/code&gt;&lt;ul&gt;
+&lt;li&gt;It's important that ssh works from postgres user to postgres user with no parameters given. If my primary server's IP is 1.2.3.4 and my replica's is 5.6.7.8, then I should be able to do this with no problems: &lt;code&gt;postgres@ip-1-2-3-4:~$ ssh 5.6.7.8&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Perform only on primary&lt;/h3&gt;
+&lt;p&gt;We need a user with replication privileges so that we can ship our WAL files. This only needs to be done on the primary, as all changes made to it will be automatically re-created on the replica. We also need to tune specific settings in the config files to tell PostgreSQL what we want it to do. Most importantly, the &lt;code&gt;archive_command&lt;/code&gt; setting is what actually ships WAL files, and here we use WAL-E to send ours to S3 for an external backup. The others tell the server that we want our server to archive detailed WAL files, with more detailed documentation on the behavior and other choices for each available from &lt;a href="http://www.postgresql.org/docs/9.3/static/runtime-config-wal.html"&gt;the Postgres docs&lt;/a&gt;.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Create a user with superuser and replication privileges: 
+&lt;code&gt;psql -c "CREATE USER replicator SUPERUSER REPLICATION LOGIN CONNECTION LIMIT 1 ENCRYPTED PASSWORD '&amp;lt;PASSWORD&amp;gt;';"&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;In the event that the psql command says that authentication failed, edit /etc/postgresql/9.3/main/pg_hba.conf and edit the line (likely top line) that says 
+&lt;code&gt;local all postgres md5&lt;/code&gt; to say &lt;code&gt;local all postgres peer&lt;/code&gt; and restart the server with 
+&lt;code&gt;service postgresql restart&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Edit /etc/postgresql/9.3/main/pg_hba.conf: Add &lt;code&gt;host replication replicator &amp;lt;IP_OF_REPLICA&amp;gt;/32 md5&lt;/code&gt; to the bottom of the file.&lt;/li&gt;
+&lt;li&gt;Edit /etc/postgresql/9.3/main/postgresql.conf and add the following options &lt;strong&gt;(ensure they are not set anywhere else in the config file already)&lt;/strong&gt;:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;hot_standby = &amp;#39;on&amp;#39;
+max_wal_senders = 5
+wal_level = &amp;#39;hot_standby&amp;#39;
+archive_mode = &amp;#39;on&amp;#39;
+archive_command = &amp;#39;envdir /etc/wal-e.d/env /usr/local/bin/wal-e wal-push %p&amp;#39;
+archive_timeout = 60
+listen_addresses = &amp;#39;*&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Restart the server: &lt;code&gt;service postgresql restart&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Perform only on replica&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Become the postgres user: &lt;code&gt;su - postgres&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Stop the server: &lt;code&gt;service postgresql stop&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Edit /etc/postgresql/9.3/main/postgresql.conf and add the following options &lt;strong&gt;(ensure they are not set anywhere else in the config file already)&lt;/strong&gt;:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;hot_standby = &amp;#39;on&amp;#39;
+max_wal_senders = 5
+wal_level = &amp;#39;hot_standby&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Next, we want to create a base backup of the primary and write a recovery.conf file to tell PostgreSQL how read from our WALs. In our case, that means pulling WAL files from S3 using WAL-E. Create a new script file: &lt;code&gt;vim replication_setup&lt;/code&gt; and place the following commands in it.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;echo Stopping PostgreSQL
+service postgresql stop
+
+echo Cleaning up old cluster directory
+rm -rf /var/lib/postgresql/9.3/main
+
+echo Starting base backup as replicator
+pg_basebackup -h &amp;lt;IP_OF_PRIMARY&amp;gt; -D /var/lib/postgresql/9.3/main -U replicator -v -P
+
+echo Writing recovery.conf file
+bash -c &amp;quot;cat &amp;gt; /var/lib/postgresql/9.3/main/recovery.conf &amp;lt;&amp;lt;- EOF
+  standby_mode = &amp;#39;on&amp;#39;
+  primary_conninfo = &amp;#39;host=&amp;lt;IP_OF_PRIMARY&amp;gt; port=5432 user=replicator password=&amp;lt;PASSWORD&amp;gt;&amp;#39;
+  trigger_file = &amp;#39;/tmp/postgresql.trigger&amp;#39;
+  restore_command = &amp;#39;envdir /etc/wal-e.d/env /usr/local/bin/wal-e wal-fetch &amp;quot;%f&amp;quot; &amp;quot;%p&amp;quot;&amp;#39;
+EOF
+&amp;quot;
+
+echo Starting PostgreSQL
+service postgresql start
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;Allow execution of that script: &lt;code&gt;chmod +x replication_setup&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Run the script: &lt;code&gt;./replication_setup&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Verify that your replica is working. Check the log at /var/log/postgresql/postgresql-9.3-main.log. You should see output similar to the following.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;2014-05-02 21:12:25 UTC LOG:  consistent recovery state reached at 0/450006C8
+2014-05-02 21:12:25 UTC LOG:  database system is ready to accept read only connections
+2014-05-02 21:12:25 UTC LOG:  started streaming WAL from primary at 0/45000000 on timeline 1
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;You can also check that the WAL send/receive processes are running:&lt;/li&gt;
+&lt;li&gt;primary: &lt;code&gt;ps -ef | grep sender&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;replica: &lt;code&gt;ps -ef | grep receiver&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Both primary and replica&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Finally, add the IP addresses of your EC2 instances so that they can see your fancy new databases: &lt;code&gt;vim /etc/postgresql/9.3/main/pg_hba.conf&lt;/code&gt; and add this line to the bottom.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;host    &amp;lt;user_name&amp;gt;       &amp;lt;db_name&amp;gt;     &amp;lt;IP_ADDRESS&amp;gt;/32           md5
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Restart both servers: &lt;code&gt;service postgresql restart&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Celebrate&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt; Continue onto &lt;a href="/blog/so-you-want-another-postgresql-database-part-2/"&gt;Part 2&lt;/a&gt;&lt;/strong&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">John Young</dc:creator><pubDate>Sat, 20 Sep 2014 00:00:00 +0200</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2014-09-20:blog/so-you-want-another-postgresql-database-part-1/</guid><category>postgres</category><category>double-database</category><category>how-to</category></item></channel></rss>

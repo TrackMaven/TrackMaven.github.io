@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+First Monthly Challenge: Elasticsearch! - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">First Monthly Challenge: Elasticsearch!</h2>
+  <p class="blog-post-meta single">Posted on <strong>October 20, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/fletcher-heisler/">Fletcher Heisler</a><br>Category: <a href="/category/monthly-challenge/">Monthly Challenge</a> | <a href="http://engineroom.trackmaven.com/blog/first-monthly-challenge-elasticsearch/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>TrackMaven has begun hosting a <a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/">Monthly Challenge meetup</a>! Each month, we will name a general topic, a new technology, or something in between. We'll collect a few resources and examples to get everyone started (hence this post), then we'll meet up in a month to share short presentations on everyone's new projects.</p>
+<p>Our first topic is <strong>Elasticsearch</strong>, an incredibly powerful search and analytics engine. Go <a href="http://www.elasticsearch.org/overview/elasticsearch">here</a> for a high level, buzzword-heavy overview, or just jump into <a href="http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/">the documentation</a> if you're feeling bold.</p>
+<p>Built on top of <a href="http://lucene.apache.org/core/">Lucene</a>, Elasticsearch is most frequently used to add full text search functionality; it comes out of the box with a rich query language that supports fuzzy matching and advanced <a href="http://lucene.apache.org/core/3_0_3/queryparsersyntax.html">parsing patterns</a>.</p>
+<p>We'll go into the details of a sample project to get you started below. A few Elasticsearch-inspired possibilities for projects might be:</p>
+<ul>
+<li>Provide real-time text search over a large corpus (ie, some subset of <a href="http://www.gutenberg.org/">Project Gutenburg</a>, a bunch of product reviews, etc.)</li>
+<li>Beyond search, <em>analysis</em> of a large set of text: determine similar authors based on vocabulary, compare word usage over time using Google Books data, or see what stands out in the language of spammy emails</li>
+<li>Task logging and visualization of results with <a href="http://www.elasticsearch.org/overview/logstash/">Logstash</a> and <a href="http://www.elasticsearch.org/overview/kibana/">Kibana</a>, the Elasticsearch <a href="http://www.elasticsearch.org/webinars/introduction-elk-stack/">"ELK" stack</a></li>
+<li>Data analyses using <a href="http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html">aggregations</a> on any sort of tabular data: financial records, movie reviews, census results...</li>
+<li>Find unusual patterns in weather data or crime data by location</li>
+<li>Create a better real-time Twitter search by combining Elasticsearch with NLP on Twitter's streaming API</li>
+</ul>
+<p>Elasticsearch communicates over a RESTful API using JSON. There are a <a href="http://www.elasticsearch.org/guide/en/elasticsearch/client/">large number of clients</a> to get you started in many different languages. We will be using the <a href="http://elasticsearch-py.readthedocs.org/en/master/">Python wrapper</a> in our examples, but there is also <a href="http://www.elasticsearch.org/guide/en/elasticsearch/client/javascript-api/current/quick-start.html">Elasticsearch.js</a> if that's more your style. You can also cURL POST data directly into Elasticsearch manually, although that may not scale well...</p>
+<p>Let's get started! <a href="http://www.elasticsearch.org/download/">Download ES</a> and unpack it into a directory/project of your choice. You can then run:</p>
+<p><code>/bin/elasticsearch</code></p>
+<p>By default, Elasticsearch sits on port 9200. Once it's booted up, you can visit:
+http://localhost:9200/</p>
+<p>in your browser and see something like:</p>
+<div class="highlight"><pre><span></span>{
+  &quot;status&quot; : 200,
+  &quot;name&quot; : &quot;Some Really Weird Name&quot;,
+  &quot;version&quot; : {
+    &quot;number&quot; : &quot;1.3.4&quot;,
+    &quot;build_hash&quot; : &quot;a70f3ccb52200f8f2c87e9c370c6597448eb3e45&quot;,
+    &quot;build_timestamp&quot; : &quot;2014-11-01T09:07:17Z&quot;,
+    &quot;build_snapshot&quot; : false,
+    &quot;lucene_version&quot; : &quot;4.9&quot;
+  },
+  &quot;tagline&quot; : &quot;You Know, for Search&quot;
+}
+</pre></div>
+
+
+<p>Now let's put some data in! Install the libraries <code>elasticsearch</code> and <code>requests</code>:</p>
+<div class="highlight"><pre><span></span>pip install elasticsearch requests
+</pre></div>
+
+
+<p>You can then run this demo script to load in the top 100 Reddit "IAMA" posts (where a famous or otherwise interesting person makes a Reddit post to say "I Am A ___, Ask Me Anything"):</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">elasticsearch</span> <span class="kn">import</span> <span class="n">Elasticsearch</span>
+
+<span class="n">es</span> <span class="o">=</span> <span class="n">Elasticsearch</span><span class="p">()</span>
+
+<span class="c1"># Return a response of the top 100 IAMA Reddit posts of all time</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;http://api.reddit.com/r/iama/top/?t=all&amp;limit=100&quot;</span><span class="p">,</span> 
+                        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;User-Agent&quot;</span><span class="p">:</span><span class="s2">&quot;TrackMaven&quot;</span><span class="p">})</span>
+
+<span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">,</span> <span class="s1">&#39;selftext&#39;</span><span class="p">,</span> <span class="s1">&#39;author&#39;</span><span class="p">,</span> <span class="s1">&#39;score&#39;</span><span class="p">,</span> 
+        <span class="s1">&#39;ups&#39;</span><span class="p">,</span> <span class="s1">&#39;downs&#39;</span><span class="p">,</span> <span class="s1">&#39;num_comments&#39;</span><span class="p">,</span> <span class="s1">&#39;url&#39;</span><span class="p">,</span> <span class="s1">&#39;created&#39;</span><span class="p">]</span>
+
+<span class="c1"># Loop through results and add each data dictionary to the ES &quot;reddit&quot; index</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">iama</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;children&#39;</span><span class="p">]):</span>
+    <span class="n">content</span> <span class="o">=</span> <span class="n">iama</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+        <span class="n">doc</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">content</span><span class="p">[</span><span class="n">field</span><span class="p">]</span>
+    <span class="n">es</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;reddit&quot;</span><span class="p">,</span> <span class="n">doc_type</span><span class="o">=</span><span class="s1">&#39;iama&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Elasticsearch arranges everything by an <strong>indexes</strong>, which can usually be thought of as the equivalent of a database in SQL terms, and <strong>document types</strong>, which in SQL terms would be individual tables. Each document type can then hold chunks of JSON data (the <strong>body</strong>), each labeled by an <strong>id</strong>.</p>
+<p>In Elasticsearch, if an index does not already exist then it will be created automatically when you first try to add data to it. Note that if we had just tried to run:</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">iama</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;children&#39;</span><span class="p">]):</span>
+    <span class="n">es</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;reddit&#39;</span><span class="p">,</span> <span class="n">doc_type</span><span class="o">=</span><span class="s1">&#39;iama&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">iama</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+</pre></div>
+
+
+<p>and stored <em>all</em> the returned fields, we would have run into a parsing error. This is because Elasticsearch tries to guess at the data types best suited for storing on the fly, but it doesn't always guess correctly. This is one reason why it's a good idea to create a new index using an explicit <a href="http://www.elasticsearch.org/guide/reference/mapping/">mapping</a> to define how you want each field stored ahead of time.</p>
+<p>Now that the index is populated with data, you can run search queries against Elasticsearch through cURL or directly in your browser. Try these out:</p>
+<div class="highlight"><pre><span></span>http://localhost:9200/reddit/iama/_search?pretty=true&amp;size=3
+http://localhost:9200/reddit/iama/_search?pretty=true&amp;q=title:almost
+</pre></div>
+
+
+<p>The Elasticsearch documentation <a href="http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl.html">here</a> gives some more examples of the types of queries you can make.</p>
+<p>Let's use the Python wrapper to make some queries as well:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">elasticsearch</span> <span class="kn">import</span> <span class="n">Elasticsearch</span>
+
+<span class="n">es</span> <span class="o">=</span> <span class="n">Elasticsearch</span><span class="p">()</span>
+
+<span class="c1"># Fetch a specific result</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">es</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;reddit&#39;</span><span class="p">,</span> <span class="n">doc_type</span><span class="o">=</span><span class="s1">&#39;iama&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;_source&#39;</span><span class="p">]</span>
+
+<span class="c1"># Update the index to be able to query against it</span>
+<span class="n">es</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;reddit&quot;</span><span class="p">)</span>
+
+<span class="c1"># Query for results: nothing will match this author</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">es</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;reddit&quot;</span><span class="p">,</span> 
+                <span class="n">body</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;match&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;no results here!&quot;</span><span class="p">}}})</span>
+<span class="k">print</span> <span class="n">res</span>
+
+<span class="c1"># Query for all results (no matching criteria)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">es</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;reddit&quot;</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;match_all&quot;</span><span class="p">:</span> <span class="p">{}}})</span>
+<span class="k">print</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">][</span><span class="s1">&#39;total&#39;</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">][</span><span class="s1">&#39;hits&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;_source&#39;</span><span class="p">][</span><span class="s1">&#39;title&#39;</span><span class="p">]</span>
+
+<span class="c1"># Query based on text appearing in the title</span>
+<span class="c1"># (by default matches across capitalization, pluralization, etc)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">es</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;reddit&quot;</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;match&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;obama&quot;</span><span class="p">}}})</span>
+<span class="k">print</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">][</span><span class="s1">&#39;total&#39;</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">][</span><span class="s1">&#39;hits&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;_source&#39;</span><span class="p">][</span><span class="s1">&#39;title&#39;</span><span class="p">]</span>
+</pre></div>
+
+
+<p>At this point, you could build more functionality around the built-in search or use <a href="http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html">aggregations</a> to perform broader analysis on the data.</p>
+<p>For now, let's try working with some time series data so that we can make some pretty charts. Download a CSV of some <a href="http://www.capitalbikeshare.com/trip-history-data">trip history data</a> from Capital Bikeshare.</p>
+<p>We'll create a mapping before storing our data this time. We can specify that certain string fields are "not_analyzed" as well, meaning that rather than try to parse out the text in "D St &amp; Maryland Ave NE", Elasticsearch will treat it as a single string not to be broken up:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">from</span> <span class="nn">elasticsearch</span> <span class="kn">import</span> <span class="n">Elasticsearch</span>
+
+<span class="c1"># Map the fields of a new &quot;trip&quot; doc_type</span>
+<span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;trip&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;start_station&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="s2">&quot;not_analyzed&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;start_terminal&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;end_station&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="s2">&quot;not_analyzed&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;end_terminal&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;bike_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+            <span class="s2">&quot;subscriber&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1"># Create a new &quot;bikeshare&quot; index that includes &quot;trips&quot; with the above mapping</span>
+<span class="n">es</span> <span class="o">=</span> <span class="n">Elasticsearch</span><span class="p">()</span>
+<span class="n">es</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;bikeshare&quot;</span><span class="p">)</span>
+<span class="n">es</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">put_mapping</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;bikeshare&quot;</span><span class="p">,</span> <span class="n">doc_type</span><span class="o">=</span><span class="s2">&quot;trip&quot;</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">mapping</span><span class="p">)</span>
+
+<span class="c1"># Import a CSV file of trip data - this will take quite a while!</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;2014-Q2-Trips-History-Data.csv&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvfile</span><span class="p">:</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">csvfile</span><span class="p">)</span>
+    <span class="n">reader</span><span class="o">.</span><span class="n">next</span><span class="p">()</span> <span class="c1"># Skip header row</span>
+    <span class="k">for</span> <span class="nb">id</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reader</span><span class="p">):</span>
+        <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">trip_seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">60</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="mi">60</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="n">trip_seconds</span><span class="p">,</span>
+            <span class="s2">&quot;start_date&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="s2">&quot;start_station&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="s2">&quot;start_terminal&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+            <span class="s2">&quot;end_date&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+            <span class="s2">&quot;end_station&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>
+            <span class="s2">&quot;end_terminal&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span>
+            <span class="s2">&quot;bike_id&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span>
+            <span class="s2">&quot;subscriber&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">8</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="n">es</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;bikeshare&quot;</span><span class="p">,</span> <span class="n">doc_type</span><span class="o">=</span><span class="s1">&#39;trip&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">content</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Run a couple queries to make sure data stored as expected:</p>
+<div class="highlight"><pre><span></span>http://localhost:9200/bikeshare/trip/_search?size=3&amp;pretty=true
+</pre></div>
+
+
+<p>Now let's graph some results with Kibana! A browser-based analytics dashboard built for adding visualization to Elasticsearch, Kibana is usually used for analyzing data over time (ie, tracking log events as a time series). In this case, we haven't collected timestamps, but </p>
+<p>Start by <a href="http://www.elasticsearch.org/overview/kibana/installation/">downloading Kibana</a>. While Elasticsearch is still up and running, you can separately visit Kibana's directory and run:</p>
+<div class="highlight"><pre><span></span>python -m SimpleHTTPServer 9201
+</pre></div>
+
+
+<p>If you now visit:</p>
+<div class="highlight"><pre><span></span>http://localhost:9201/
+</pre></div>
+
+
+<p>you should be able to see Kibana's default interface. Click "Blank Dashboard" at the bottom to get started, or let Kibana fill in some default panels. Add a row of query results using a "table" panel and try searching for <code>subscriber:registered</code> at the top instead of the default <code>*</code> to see the results limit. (To add a panel to a new row, click the green "+" on the far left.)</p>
+<p>Let's see the proportion of registered users in a chart. Add a new row to the dashboard, then add a <strong>terms</strong> type panel to that row. Give it a title "Subscriber types" and take the <strong>count</strong> of the <strong>field</strong> "subscribers" for a <em>style</em>* of "bar" or "pie". This should create a chart of the registered versus casual bikeshare users:
+<center><img alt="ElasticSearch Chart 1" src="/images/ESchart1.png" /></center></p>
+<p>Try taking a look at the distribution of top ending stations, <code>end_station</code>, in a similar way:
+<center><img alt="ElasticSearch Chart 2" src="/images/ESchart2.png" /></center></p>
+<p>Now we can run search queries and get real-time updates on these charts; try searching for <code>start_station:"Lincoln Memorial"</code> to see where riders end their journey when they start at the Lincoln Memorial.</p>
+<p>Next steps: examine results across time, analyze the total duration of trips, add geocoding and map the results, find the bikes that have traveled the farthest total distance... Even if you aren't attending the meetup, please let us know if you try out any interesting side projects using Elasticsearch - bonus points if you include an open-source repo that we could share here!</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/elasticsearch/">elasticsearch</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image fletcher-heisler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Fletcher Heisler</h3>
+<p class="well-content">I am the VP of Engineering at <a href="http://trackmaven.com/">TrackMaven</a> and founder of <a href="https://realpython.com/">Real Python</a>.</p>
+<p class="well-content">You can follow me on <a href="https://twitter.com/fheisler">Twitter</a> and find a few of my open-source projects on <a href="https://github.com/fheisler">GitHub</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

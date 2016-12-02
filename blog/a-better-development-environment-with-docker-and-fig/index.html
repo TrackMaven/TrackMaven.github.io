@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+A Better Development Environment with Docker and Fig - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">A Better Development Environment with Docker and Fig</h2>
+  <p class="blog-post-meta single">Posted on <strong>October 28, 2014</strong> by <a href="http://engineroom.trackmaven.com/author/cameron-maske/">Cameron Maske</a><br>Category: <a href="/category/development/">Development</a> | <a href="http://engineroom.trackmaven.com/blog/a-better-development-environment-with-docker-and-fig/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>Local development environments can be a nightmare.
+Have you ever run into a scenario where something works on your machine but not on your colleagues'?
+Having to spend time debugging platform-specific problems is a frustrating productivity sink.</p>
+<p>Before we explore how to set up our stress free development environment, let's consider what key elements it should have.</p>
+<ul>
+<li>Isolated. No other project should affect it and it shouldn't affect any other projects. For example, if one project uses Python 2.7, that shouldn't affect another project which uses Python 3.4.</li>
+<li>Repeatable. Write it once and have it work each time. I don't want to have to spend time tweaking it for each user.</li>
+<li>Be as close to production as possible.</li>
+</ul>
+<p>All that sounds great. But how do we achieve this?</p>
+<p>Enter Docker. If you are unfamiliar with what Docker is, Solomon Hykes (founder and CTO of Docker) gives a great <a href="http://youtu.be/Q5POuMHxW-0?t=2m18s">introduction talk</a>.</p>
+<p>Docker lends itself perfectly to our 3 requirements above. Docker was built to solve the problem of "run it once, run it everywhere". Docker containers are isolated, portable and repeatable.</p>
+<p>But building, booting and managing containers can take a fair few complex shell commands.</p>
+<p>The missing link is Fig. Fig describes itsself as a tool to create <a href="https://github.com/docker/fig/">fast, isolated development environments</a> using Docker.</p>
+<p>Fig moves all the configuration required to orchestra Docker into a simple clear <code>fig.yml</code> file. It handles all the work of building and running containers, forwarding their ports, sharing volumes, and linking them.</p>
+<p>Let's explore Fig by example, and let's make it challenging.</p>
+<p>I want a project with TWO databases, <code>Postgres 9.1</code> and <code>ElasticSearch 1.1</code>. I want <code>Redis 2.8.3</code> for caching, and I'll be running my main site through a Python-powered Flask app.</p>
+<p>Before we set this up in Fig, imagine setting this up locally. How long would it take?</p>
+<p>Thought experiment over; let's dive into an example. All code featured is available in this <a href="https://github.com/TrackMaven/using-fig">GitHub repo</a>.</p>
+<h3>An example</h3>
+<p>Let's start with the <code>fig.yml</code>.</p>
+<div class="highlight"><pre><span></span><span class="n">web</span><span class="o">:</span>
+    <span class="n">build</span><span class="o">:</span> <span class="o">.</span>
+    <span class="n">command</span><span class="o">:</span> <span class="n">python</span> <span class="n">app</span><span class="o">.</span><span class="na">py</span>
+    <span class="n">volumes</span><span class="o">:</span>
+        <span class="o">-</span> <span class="o">./</span><span class="n">code</span>
+    <span class="n">ports</span><span class="o">:</span>
+        <span class="o">-</span> <span class="s2">&quot;5000:5000&quot;</span>
+    <span class="n">links</span><span class="o">:</span>
+        <span class="o">-</span> <span class="n">es</span>
+        <span class="o">-</span> <span class="n">db</span>
+        <span class="o">-</span> <span class="n">redis</span>
+<span class="n">es</span><span class="o">:</span>
+    <span class="n">image</span><span class="o">:</span> <span class="n">dockerfile</span><span class="o">/</span><span class="n">elasticsearch</span>
+    <span class="n">volumes</span><span class="o">:</span>
+        <span class="o">-</span> <span class="n">elasticsearch</span><span class="o">:/</span><span class="n">data</span>
+    <span class="n">ports</span><span class="o">:</span>
+        <span class="o">-</span> <span class="s2">&quot;9200:9200&quot;</span>
+        <span class="o">-</span> <span class="s2">&quot;9300:9300&quot;</span>
+<span class="n">db</span><span class="o">:</span>
+    <span class="n">image</span><span class="o">:</span> <span class="n">orchardup</span><span class="o">/</span><span class="n">postgres</span>
+    <span class="n">ports</span><span class="o">:</span>
+        <span class="o">-</span> <span class="s2">&quot;5432:5432&quot;</span>
+    <span class="n">environment</span><span class="o">:</span>
+        <span class="n">POSTGRESQL_DB</span><span class="o">:</span><span class="n">test_db</span>
+<span class="n">redis</span><span class="o">:</span>
+    <span class="n">image</span><span class="o">:</span> <span class="n">trackmaven</span><span class="o">/</span><span class="n">redis</span>
+    <span class="n">ports</span><span class="o">:</span>
+        <span class="o">-</span> <span class="s2">&quot;6379:6379&quot;</span>
+</pre></div>
+
+
+<p>In less then 30 lines of yaml, I've declared our stack.</p>
+<p>With <a href="http://www.fig.sh/install.html">Fig installed</a> we can start our stack by running <code>fig up</code>.</p>
+<iframe src="https://gfycat.com/ifr/SlightZestyGlassfrog" frameborder="0" scrolling="no" width="100%" ></iframe>
+
+<p>Let's break down what our simple command above did into 2 stages.</p>
+<h4>Building stage.</h4>
+<div class="highlight"><pre><span></span>$ docker pull orchardup/postgres
+$ docker pull trackmaven/redis
+$ docker pull dockerfile/elasticsearch
+$ docker build -t demo_web -rm<span class="o">=</span>True web
+</pre></div>
+
+
+<p><strong>Equivalent docker commands preformed by Fig</strong></p>
+<p>Fig goes through each service, then, if needed, builds an image.</p>
+<p>Building is based off a <a href="http://docs.docker.com/reference/builder/">Dockerfile</a> that contains all the required steps to produce our desired image.</p>
+<div class="highlight"><pre><span></span># Our base image is Ubuntu 13.04
+FROM stackbrew/ubuntu:raring
+# Install any updates
+RUN apt-get -y update
+# Ensure python is installed and postgres drivers.
+RUN apt-get install -y python python-pip python-psycopg2
+
+WORKDIR /code
+ADD requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+</pre></div>
+
+
+<p>In our example project, our <a href="https://github.com/TrackMaven/using-fig/blob/master/web/Dockerfile">Dockerfile</a> builds on top of an Ubuntu base. It ensures Python and pip are installed before installing our project-specific Python packages from requirements.txt.</p>
+<p>Alternatively, you can point services towards a pre-built image.
+This can exist either locally, and be referenced by a tag or a partial image ID, or remotely, on Docker's <a href="https://registry.hub.docker.com/">public registry</a>.</p>
+<p>Building a container off a Dockerfile works best for a  service that is dependent on code within your project. In this case, the core logic for our Python-powered app is in our source control. In contrast, images work best for services that don't rely as heavily on project-specific code (e.g. the datastores).</p>
+<p>Once Fig is satisfied all the required images are built or pulled, it's then time to run the services...</p>
+<h4>Running stage.</h4>
+<div class="highlight"><pre><span></span>$ docker run --rm --name demo_es_1 -v <span class="s2">&quot;elasticsearch:/data&quot;</span> -p <span class="s2">&quot;9200:9200&quot;</span> -p <span class="s2">&quot;9300:9300&quot;</span> dockerfile/elasticsearch
+$ docker run --rm --name demo_db_1 -p <span class="s2">&quot;5432:5432&quot;</span> -e <span class="s2">&quot;POSTGRESQL_DB:test_db&quot;</span> orchardup/postgres
+$ docker run --rm --name demo_redis_1 -p <span class="s2">&quot;6379:6379&quot;</span> trackmaven/redis
+$ docker run --rm --name demo_web_1 -v <span class="s2">&quot;web:/code&quot;</span> -p <span class="s2">&quot;5000:5000&quot;</span> --link es:demo_es_1 --link db:demo_db_1 --link redis:demo_redis_1 demo_web python app.py
+</pre></div>
+
+
+<p><strong>Equivalent docker commands preformed by Fig</strong></p>
+<p>Each service has a variety of run time options, including...</p>
+<ul>
+<li><code>volumes</code>: Allows you to share folders between your host machine and the services' docker containers. In our example, the <code>web</code> folder is shared, so any code changes to the contained files are immediately updated on the running container.</li>
+<li><code>ports</code>: Exposes ports between the host (you) and the container (service).</li>
+<li><code>environment</code>: Allows you to set environment variables for containers. In our example, this allows us to configure the name of our database, <a href="https://github.com/orchardup/docker-postgresql/blob/master/run">due to a clever run script</a>.</li>
+<li><code>links</code>: <a href="http://www.fig.sh/env.html">Allows inter-service communication</a>. In our example, <code>web</code> needs to know the ip and ports for the <code>redis</code>, <code>db</code> and <code>es</code> services. Fig ensures those boot up first and then injects a set of environment variables to <code>web</code> which include the IP address and various ports of the linked services.</li>
+</ul>
+<p>To stop the running services you kill them with <code>Ctrl+C</code> or run <code>fig stop</code> in another terminal window.</p>
+<p>Behind the scenes, Fig has used Docker to build and then run containers for each service. Running <code>fig up</code> again will restart the previously created containers whose volume changes (files, folders, etc) persist between boots. This means that if you have added data to one of the data stores it will still be present between restarts. You can remove the containers associated with services, and thus any volume changes, by running <code>fig remove [SERVICE]</code>.</p>
+<p>After a successful build of a service Fig won't attempt to rebuild that service on the next <code>up</code>. That means if you want to make any changes to a built service's <code>Dockerfile</code>, you'll need to tell Fig to <code>rebuild</code> that image by using <code>fig build [SERVICE]</code>.</p>
+<p>Fig also gives you the ability to run one-off commands in services using <code>fig run [SERVICE] [COMMAND]</code>, e.g. <code>fig run web python</code>.</p>
+<h3>That's it!</h3>
+<p>For more about what Fig can do, I'd suggest checking out the
+<a href="http://www.fig.sh/index.html">documentation</a>.</p>
+<h3>Tips we've learnt along the way.</h3>
+<ul>
+<li>Try to use images when you can. Each layer is pulled in parallel, resulting in a quick download. An image is also frozen. Without careful version pinning, re-building images can change over time. Try to move as many non-project specific steps out of your Dockerfiles into new base images. For example, in our web service, the python and pip installation steps are good canditates to be contained in base images.</li>
+<li>Across teams, try to all use the same version of Docker and Fig. Both are moving fast and not insusceptible to version differences.</li>
+</ul>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/docker/">docker</a>, <a href="/tag/fig/">fig</a>, <a href="/tag/how-to/">how-to</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image cameron-maske-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Cameron Maske</h3>
+<p class="well-content">I am the Lead Architect Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">Check out my open source efforts on <a href="https://github.com/cameronmaske">Github</a>. Want to get in touch? Feel free to drop me an <a href="mailto:cam@trackmaven.com">email</a> or <a href="http://twitter.com/cameronmaske">tweet</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

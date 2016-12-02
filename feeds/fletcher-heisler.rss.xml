@@ -1,0 +1,978 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel><title>The Engine Room - TrackMaven</title><link>http://engineroom.trackmaven.com/</link><description></description><lastBuildDate>Tue, 17 Feb 2015 00:00:00 +0100</lastBuildDate><item><title>Monthly Challenge: Mobile Development</title><link>http://engineroom.trackmaven.com/blog/monthly-challenge-mobile-development/</link><description>&lt;p&gt;TrackMaven's next &lt;a href="www.meetup.com/TrackMaven-Monthly-Challenge/"&gt;Monthly Challenge&lt;/a&gt; meetup will cover &lt;a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/events/219945053/"&gt;mobile development&lt;/a&gt;. To help kickstart some projects, in this post I'll cover the basics of one way to get started creating a cross-platform mobile app.&lt;/p&gt;
+&lt;p&gt;We'll be using &lt;a href="http://ionicframework.com/"&gt;Ionic&lt;/a&gt;, a framework for making beautiful, responsive mobile apps using HTML5 and AngularJS. Ionic sits on top of &lt;a href="http://cordova.apache.org/"&gt;Cordova&lt;/a&gt; and has a &lt;a href="http://ionicframework.com/blog/what-is-cordova-phonegap/"&gt;complicated relationship&lt;/a&gt; with &lt;a href="http://phonegap.com/"&gt;PhoneGap&lt;/a&gt;, both of which can also be used individually for writing cross-platform mobile applications. A few other possible options for getting started in mobile development:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://jlongster.com/First-Impressions-using-React-Native"&gt;React Native&lt;/a&gt; is (as of this post) not yet publicly released but shows tremendous promise&lt;/li&gt;
+&lt;li&gt;Go native with the &lt;a href="http://developer.android.com/sdk/index.html"&gt;Android SDK&lt;/a&gt; and start &lt;a href="https://developer.apple.com/library/ios/referencelibrary/GettingStarted/RoadMapiOS/index.html"&gt;jumping through hoops&lt;/a&gt; to develop on Apple's iOS&lt;/li&gt;
+&lt;li&gt;Try out &lt;a href="http://kivy.org/"&gt;Kivy&lt;/a&gt; for writing mobile (and non-mobile) apps in Python! I personally haven't had great luck getting Kivy apps to compile on multiple devices, but it's definitely an appealing concept&lt;/li&gt;
+&lt;li&gt;Appcelerator's &lt;a href="http://www.appcelerator.com/titanium/"&gt;Titanium&lt;/a&gt; uses a JavaScript-based SDK and covers iOS, Android, Windows, BlackBerry and HTML5; I haven't tried it out, but have heard that in some cases (especially on older devices) it may be more performant than Ionic, being a step or two closer to native code&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;For this Ionic example, we're going to cover the following:
+- Push a sample app to iOS and Android emulators + devices (without forking over $99 to Apple)
+- Set up custom styles using Sass
+- Convert the sample JS to CoffeeScript with automatic gulp compilation
+- Add custom icons and a splash screen&lt;/p&gt;
+&lt;p&gt;Let's get to it!&lt;/p&gt;
+&lt;h2&gt;Dependencies&lt;/h2&gt;
+&lt;p&gt;First off, you'll need to have &lt;a href="http://nodejs.org/"&gt;Node.js&lt;/a&gt; installed, then install the &lt;code&gt;ionic&lt;/code&gt; NPM package:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo npm install -g cordova ionic&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;You can now create a new Ionic project using one of three templates:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;blank&lt;/code&gt; - you guessed it&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;tabs&lt;/code&gt; - includes a title header bar and "home", "star", and "settings" buttons on a footer&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;sidemenu&lt;/code&gt; - includes a collapsible lefthand sidebar&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;ionic start myprojectname sidemenu
+cd myprojectname/
+ionic serve&lt;/p&gt;
+&lt;p&gt;After changing into the &lt;code&gt;myprojectname&lt;/code&gt; directory (or whatever you want to name it), running &lt;code&gt;ionic serve&lt;/code&gt; will start up the sample project on localhost and automatically open the running app in your browser. Ship it!&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;One important note: when testing your app locally, because of &lt;a href="http://enable-cors.org/"&gt;CORS&lt;/a&gt; rules, you won't be able to access any external data. For instance, calling an API or even loading in a picture from the web will be blocked by default on most browsers.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;There are a few ways around this; for instance, you &lt;em&gt;could&lt;/em&gt; use JSONP instead of &lt;code&gt;$http&lt;/code&gt; calls, mess with request headers, load up a separate brower without CORS protection... &lt;strong&gt;or&lt;/strong&gt; my preferred method: just use a &lt;a href="https://chrome.google.com/webstore/detail/cors-toggle/omcncfnpmcabckcddookmnajignpffnh?hl=en"&gt;Chrome plugin&lt;/a&gt; to toggle CORS on and off. This isn't the most secure, idea, so make sure you're only purposefully allowing cross domain requests while testing your app, not browsing the web.&lt;/p&gt;
+&lt;h2&gt;Run it on iOS&lt;/h2&gt;
+&lt;p&gt;Before diving into the code, let's make sure we can get the app on all our devices. For loading the project onto an iOS device, the first steps is to &lt;a href="https://developer.apple.com/xcode/downloads/"&gt;have XCode&lt;/a&gt;. Next you'll need to add iOS as a platform for the Ionic project and build the project for iOS:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ionic platform add ios
+ionic build ios
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This will create a &lt;code&gt;.xcodeproj&lt;/code&gt; file in &lt;code&gt;/platform/ios&lt;/code&gt;. Optionally, you can install and run the iOS simulator to run the app within an on-screen iDevice of choice:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;npm install -g ios-sim
+ionic emulate ios
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;To get the project running on a physical iDevice, previously you would have had to sign up for a $99 developer license, then build/load the project onto the device from within XCode. However, Ionic has recently released a wonderful workaround in their &lt;a href="http://ionicframework.com/blog/view-app-is-alive/"&gt;Ionic View for iOS&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;With the Ionic View app, you can first sign up for an account with Ionic &lt;a href="https://apps.ionic.io/signup"&gt;here&lt;/a&gt;, then &lt;a href="https://itunes.apple.com/us/app/ionic-view/id849930087"&gt;download the free app&lt;/a&gt; from the iTunes store onto your device of choice. Finally, just run:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ionic upload&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;You'll need to authenticate your Ionic account, then the project will be uploaded &lt;a href="http://apps.ionic.io/projects"&gt;here&lt;/a&gt; and available for viewing/testing from within Ionic View on the iOS device!&lt;/p&gt;
+&lt;h2&gt;Run it on Android&lt;/h2&gt;
+&lt;p&gt;First, let's get dependencies set up. We'll need:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://ant.apache.org/bindownload.cgi"&gt;ant&lt;/a&gt;; run &lt;code&gt;ant -version&lt;/code&gt; to check if you have it already&lt;/li&gt;
+&lt;li&gt;the &lt;a href="http://developer.android.com/sdk/index.html"&gt;Android SDK&lt;/a&gt;; if you're using brew, run &lt;code&gt;brew install android-sdk&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;all default selected packages from Android's package manager. Run &lt;code&gt;android&lt;/code&gt; to enter the manager; you may need to run this command multiple times to re-enter the package manager and get all the defaults installed.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Now we can add &lt;code&gt;android&lt;/code&gt; as a platform to the Ionic project:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ionic platform add android&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;If you get the error: 
+&lt;code&gt;Error: ANDROID_HOME is not set and "android" command not in your PATH.&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;You'll need to add the path to &lt;code&gt;android&lt;/code&gt; to your &lt;code&gt;PATH&lt;/code&gt;. To find the right location, run &lt;code&gt;android&lt;/code&gt; and note the root folder of the SDK, then find the full path to the specific tool; for me, having installed through &lt;code&gt;brew&lt;/code&gt;, the path to add was &lt;code&gt;/usr/local/Cellar/android-sdk/r21.1/tools&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Now we can build the project for Android:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ionic build android&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Optionally, if you want to use an Android emulator to test on various devices, we can set up an "AVD" - an Android Virtual Device. Full details are available &lt;a href="http://developer.android.com/tools/devices/managing-avds-cmdline.html"&gt;here&lt;/a&gt;, but the short version is:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Run &lt;code&gt;android list targets&lt;/code&gt; to get a list of possible images along with IDs&lt;/li&gt;
+&lt;li&gt;Choose an image and run &lt;code&gt;android create avd -n {name} -t {ID}&lt;/code&gt;, where {name} is for instance "myandroid" and {ID} is the target ID number.&lt;/li&gt;
+&lt;li&gt;Some platforms have multiple ABIs (like choosing an API, but at the machine code level), in which case you'll need to specify one using the &lt;code&gt;-b&lt;/code&gt; flag&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As an example, I used:
+&lt;code&gt;android create avd -n andefault1 -t 2 -b default/armeabi-v7a&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Finally, spin up the emulator:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ionic emulate android&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;To get the app running on a physical Android device, plug the device into USB and run:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ionic run android&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;If nothing happens, you might need to swipe the device's top menu down and select an option like "charge only" mode. You can use the Android debugger to list all available devices and check if the phone is being recognized:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;adb devices -l&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;Roll your own Sass&lt;/h2&gt;
+&lt;p&gt;We've still got a default template! We can customize the styling of the app using &lt;a href="http://sass-lang.com/guide"&gt;Sass&lt;/a&gt;. To get set up, first run this intuitive command:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ionic setup sass&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;All of our Sass will be loaded in the file &lt;code&gt;./scss/ionic.app.scss&lt;/code&gt; - this will point to &lt;code&gt;www/lib/ionic/scss&lt;/code&gt; for &lt;em&gt;many&lt;/em&gt; separate SCSS files that can all be customized in style. Take a look at the color definitions at the top of &lt;code&gt;www/lib/ionic/scss/_variables.scss&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nv"&gt;$light&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                           &lt;span class="mh"&gt;#fff&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$stable&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                          &lt;span class="mh"&gt;#f8f8f8&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$positive&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                        &lt;span class="mh"&gt;#4a87ee&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$calm&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                            &lt;span class="mh"&gt;#43cee6&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$balanced&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                        &lt;span class="mh"&gt;#66cc33&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$energized&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                       &lt;span class="mh"&gt;#f0b840&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$assertive&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                       &lt;span class="mh"&gt;#ef4e3a&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$royal&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                           &lt;span class="mh"&gt;#8a6de9&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;span class="nv"&gt;$dark&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;                            &lt;span class="mh"&gt;#444&lt;/span&gt; &lt;span class="nv"&gt;!default&lt;/span&gt;&lt;span class="err"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;For a quick and highly visible win, we can change around the hex codes in this file to modify the app's main color palette.&lt;/p&gt;
+&lt;p&gt;Running &lt;code&gt;ionic serve&lt;/code&gt; will use &lt;a href="http://gulpjs.com/"&gt;gulp&lt;/a&gt; to check for and automatically recompile any Sass changes.&lt;/p&gt;
+&lt;h2&gt;Set up CoffeeScript&lt;/h2&gt;
+&lt;p&gt;At TrackMaven, we write a lot of &lt;a href="http://coffeescript.org/"&gt;CoffeeScript&lt;/a&gt; instead of raw JavaScript; this tends to save a lot of time/eyesore/etc if you know what you're doing, especially coming from a Python background. So, let's set up this Ionic project to compile &lt;code&gt;coffee&lt;/code&gt; files into JS!&lt;/p&gt;
+&lt;p&gt;First, some minor updates to the main page, &lt;code&gt;index.html&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="cp"&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;html&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;head&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;meta&lt;/span&gt; &lt;span class="na"&gt;charset&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;utf-8&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;meta&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;viewport&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;content&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;title&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;title&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;link&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;css/ionic.app.css&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;rel&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;stylesheet&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;lib/ionic/js/ionic.bundle.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;cordova.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;js/app.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;head&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;body&lt;/span&gt; &lt;span class="na"&gt;ng-app&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;app&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;ion-nav-view&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;ion-nav-view&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;body&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;html&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Here we just renamed &lt;code&gt;ng-app&lt;/code&gt; from "starter" and point to a (future) compiled &lt;code&gt;app.js&lt;/code&gt; file rather than individual JS files.&lt;/p&gt;
+&lt;p&gt;Now, move the current &lt;code&gt;app.js&lt;/code&gt; and &lt;code&gt;controllers.js&lt;/code&gt; files to a new folder &lt;code&gt;/www/coffee&lt;/code&gt; and rename then to have &lt;code&gt;.coffee&lt;/code&gt; extensions. We could leave them as-is, since JavaScript is valid CoffeeScript, but let's convert them to actual CoffeeScript so that we can more easily make modifications later.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;app.coffee&lt;/code&gt; ends up looking something like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;angular&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;module&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;app&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;ionic&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#39;app.controllers&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+
+&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;run&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;($ionicPlatform) -&amp;gt;&lt;/span&gt;
+  &lt;span class="nx"&gt;$ionicPlatform&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;ready&lt;/span&gt; &lt;span class="nf"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="c1"&gt;# Hide the accessory bar by default (remove this to show the accessory bar above the keyboard&lt;/span&gt;
+    &lt;span class="c1"&gt;# for form inputs)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;window&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;cordova&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;window&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;cordova&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;plugins&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;Keyboard&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+      &lt;span class="nx"&gt;cordova&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;plugins&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;Keyboard&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;hideKeyboardAccessoryBar&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;window&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;StatusBar&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+      &lt;span class="c1"&gt;# org.apache.cordova.statusbar required&lt;/span&gt;
+      &lt;span class="nx"&gt;StatusBar&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;styleDefault&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;config&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;($stateProvider, $urlRouterProvider) -&amp;gt;&lt;/span&gt;
+  &lt;span class="nx"&gt;$stateProvider&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;state&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;app&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;url: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/app&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nv"&gt;abstract: &lt;/span&gt;&lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nv"&gt;templateUrl: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;templates/menu.html&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nv"&gt;controller: &lt;/span&gt;&lt;span class="s"&gt;&amp;#39;AppCtrl&amp;#39;&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nx"&gt;state&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;app.search&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;url: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/search&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nv"&gt;views: &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+      &lt;span class="s"&gt;&amp;#39;menuContent&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nv"&gt;templateUrl: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;templates/search.html&amp;quot;&lt;/span&gt;
+      &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nx"&gt;state&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;app.browse&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;url: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/browse&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nv"&gt;views: &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+      &lt;span class="s"&gt;&amp;#39;menuContent&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nv"&gt;templateUrl: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;templates/browse.html&amp;quot;&lt;/span&gt;
+      &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nx"&gt;state&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;app.playlists&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;url: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/playlists&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nv"&gt;views: &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+      &lt;span class="s"&gt;&amp;#39;menuContent&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nv"&gt;templateUrl: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;templates/playlists.html&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nv"&gt;controller: &lt;/span&gt;&lt;span class="s"&gt;&amp;#39;PlaylistsCtrl&amp;#39;&lt;/span&gt;
+      &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nx"&gt;state&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;app.single&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;url: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;/playlists/:playlistId&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="nv"&gt;views: &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+      &lt;span class="s"&gt;&amp;#39;menuContent&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nv"&gt;templateUrl: &lt;/span&gt;&lt;span class="s"&gt;&amp;quot;templates/playlist.html&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nv"&gt;controller: &lt;/span&gt;&lt;span class="s"&gt;&amp;#39;PlaylistCtrl&amp;#39;&lt;/span&gt;
+      &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+  &lt;span class="p"&gt;})&lt;/span&gt;
+
+  &lt;span class="c1"&gt;# if none of the above states are matched, use this as the fallback&lt;/span&gt;
+  &lt;span class="nx"&gt;$urlRouterProvider&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;otherwise&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;/app/playlists&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;While our &lt;code&gt;controllers.coffee&lt;/code&gt; file is as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;angular&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;module&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;app.controllers&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[])&lt;/span&gt;
+
+&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;controller&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;AppCtrl&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;($scope, $ionicModal, $timeout) -&amp;gt;&lt;/span&gt;
+  &lt;span class="c1"&gt;# Form data for the login modal&lt;/span&gt;
+  &lt;span class="nv"&gt;$scope.loginData = &lt;/span&gt;&lt;span class="p"&gt;{}&lt;/span&gt;
+
+  &lt;span class="c1"&gt;# Create the login modal that we will use later&lt;/span&gt;
+  &lt;span class="nx"&gt;$ionicModal&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;fromTemplateUrl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;templates/login.html&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;scope: &lt;/span&gt;&lt;span class="nx"&gt;$scope&lt;/span&gt;
+  &lt;span class="p"&gt;}).&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;(modal) -&amp;gt;&lt;/span&gt;
+    &lt;span class="nv"&gt;$scope.modal = &lt;/span&gt;&lt;span class="nx"&gt;modal&lt;/span&gt;
+  &lt;span class="p"&gt;)&lt;/span&gt;
+
+  &lt;span class="c1"&gt;# Triggered in the login modal to close it&lt;/span&gt;
+  &lt;span class="nv"&gt;$scope.closeLogin = &lt;/span&gt;&lt;span class="nf"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;modal&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;hide&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+  &lt;span class="c1"&gt;# Open the login modal&lt;/span&gt;
+  &lt;span class="nv"&gt;$scope.login = &lt;/span&gt;&lt;span class="nf"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;modal&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;show&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+  &lt;span class="c1"&gt;# Perform the login action when the user submits the login form&lt;/span&gt;
+  &lt;span class="nv"&gt;$scope.doLogin = &lt;/span&gt;&lt;span class="nf"&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class="nx"&gt;console&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;log&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;Doing login&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;loginData&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;closeLogin&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;controller&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;PlaylistsCtrl&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;($scope) -&amp;gt;&lt;/span&gt;
+    &lt;span class="nv"&gt;$scope.playlists = &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+      &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nv"&gt;title: &lt;/span&gt;&lt;span class="s"&gt;&amp;#39;Reggae&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;id: &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+      &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nv"&gt;title: &lt;/span&gt;&lt;span class="s"&gt;&amp;#39;Chill&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;id: &lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+      &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nv"&gt;title: &lt;/span&gt;&lt;span class="s"&gt;&amp;#39;Dubstep&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;id: &lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;controller&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;PlaylistCtrl&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nf"&gt;($scope, $stateParams) -&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now we need to set up CoffeeScript auto-compilation to get our &lt;code&gt;.coffee&lt;/code&gt; files loaded into &lt;code&gt;app.js&lt;/code&gt; whenever a change is made. In &lt;code&gt;/gulpfile.js&lt;/code&gt;, add the following:&lt;/p&gt;
+&lt;p&gt;At the top with the other global variable declarations:
+&lt;code&gt;var coffee = require('gulp-coffee');&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Add a folder to the compilation paths:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;var paths = {
+  sass: [&amp;#39;./scss/**/*.scss&amp;#39;],
+  coffee: [&amp;#39;./www/**/*.coffee&amp;#39;]
+};
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Add &lt;code&gt;coffee&lt;/code&gt; to the &lt;code&gt;watch&lt;/code&gt; task:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;gulp.task(&amp;#39;watch&amp;#39;, function() {
+  gulp.watch(paths.sass, [&amp;#39;sass&amp;#39;]);
+  gulp.watch(paths.coffee, [&amp;#39;coffee&amp;#39;]);
+});
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then add the full &lt;code&gt;coffee&lt;/code&gt; task:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;gulp.task(&amp;#39;coffee&amp;#39;, function(done) {
+  gulp.src(paths.coffee)
+  .pipe(coffee({bare: true}).on(&amp;#39;error&amp;#39;, gutil.log))
+  .pipe(concat(&amp;#39;app.js&amp;#39;))
+  .pipe(gulp.dest(&amp;#39;./www/js&amp;#39;))
+  .on(&amp;#39;end&amp;#39;, done)
+})
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Finally, you'll need to add &lt;code&gt;gulp-coffee&lt;/code&gt;:
+&lt;code&gt;npm install gulp-coffee --save&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Then make sure that &lt;code&gt;gulp-coffee&lt;/code&gt; has been added to &lt;code&gt;package.json&lt;/code&gt; as a dependency. Now run &lt;code&gt;ionic serve&lt;/code&gt; and make changes to the &lt;code&gt;.coffee&lt;/code&gt; files to automatically recompile &lt;code&gt;app.js&lt;/code&gt; and reload the app!&lt;/p&gt;
+&lt;h2&gt;Add custom icons and splash screen&lt;/h2&gt;
+&lt;p&gt;This step used to be a hassle to manage, but Ionic has &lt;a href="http://ionicframework.com/blog/automating-icons-and-splash-screens/"&gt;recently automated&lt;/a&gt; nearly the entire process:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Add a root &lt;code&gt;resources&lt;/code&gt; directory to the project&lt;/li&gt;
+&lt;li&gt;In &lt;code&gt;resources&lt;/code&gt;, add a 192x192px or larger &lt;code&gt;icon.png&lt;/code&gt; file (or &lt;code&gt;.psd&lt;/code&gt;, &lt;code&gt;.ai&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;In &lt;code&gt;resources&lt;/code&gt;, add a 2208x2208px or larger &lt;code&gt;splash.png&lt;/code&gt; file (or &lt;code&gt;.psd&lt;/code&gt;, &lt;code&gt;.ai&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;Run &lt;code&gt;ionic resources&lt;/code&gt; to automatically generate all the appropriate files&lt;/li&gt;
+&lt;li&gt;Add the &lt;code&gt;--icon&lt;/code&gt; or &lt;code&gt;--splash&lt;/code&gt; options to update only one set of resource&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This &lt;a href="http://ionicframework.com/blog/automating-icons-and-splash-screens/"&gt;post&lt;/a&gt; from Ionic has more details around the particular design aspects, but that's about it!&lt;/p&gt;
+&lt;h3&gt;Some possible next steps...&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Set up an actual login page with authentication with &lt;a href="http://jamesbrewer.io/2014/09/22/json-web-token-authentication-part-one/"&gt;JSON Web Tokens&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Use Angular &lt;a href="https://docs.angularjs.org/api/ng/service/$http"&gt;$http&lt;/a&gt; requests to load in some external data&lt;/li&gt;
+&lt;li&gt;Add in &lt;a href="http://ionicframework.com/docs/api/directive/ionInfiniteScroll/"&gt;infinite scroll&lt;/a&gt; to query endless paginated data (what else are smartphones for?)&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://ionicframework.com/docs/guide/publishing.html"&gt;Publish your app&lt;/a&gt; &lt;/li&gt;
+&lt;li&gt;????&lt;/li&gt;
+&lt;li&gt;Profit!&lt;/li&gt;
+&lt;/ul&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Fletcher Heisler</dc:creator><pubDate>Tue, 17 Feb 2015 00:00:00 +0100</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2015-02-17:blog/monthly-challenge-mobile-development/</guid><category>mobile</category><category>ionic</category></item><item><title>Monthly Challenge: Visualization</title><link>http://engineroom.trackmaven.com/blog/using-cartodb-and-threejs-for-mapping/</link><description>&lt;h2&gt;Using CartoDB and Three.js for mapping&lt;/h2&gt;
+&lt;p&gt;Our next monthly challenge is &lt;strong&gt;visualization&lt;/strong&gt;! Although you could visualize data on just about anything in just about any way, for this post we're going to focus on &lt;strong&gt;mapping&lt;/strong&gt; data geographically using two different tools:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CartoDB: a great drag-and-drop solution for super quick and simple map creation - also a paid product that limits its free plan to 50MB of data!&lt;/li&gt;
+&lt;li&gt;Three.js and WebGL Globe: for fancy 3D visualizations and an interactive globe onto which we can plot geographic data.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A few other possible frameworks for mapping that we &lt;em&gt;won't&lt;/em&gt; be covering in this post include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://www.highcharts.com/"&gt;Highcharts&lt;/a&gt; is a library for creating quick interactive charts and has a separate product specifically for &lt;a href="http://www.highcharts.com/products/highmaps"&gt;creating maps&lt;/a&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;At TrackMaven, we use &lt;a href="http://d3js.org/"&gt;D3.js&lt;/a&gt; to create interactive visualizations. Although we won't be covering D3 in this post, Square has a great &lt;a href="http://square.github.io/intro-to-d3/"&gt;intro to D3&lt;/a&gt;, which you should follow up with a tutorial on &lt;a href="http://bost.ocks.org/mike/map/"&gt;mapping in D3&lt;/a&gt; written by the creator of D3 himself!&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://leafletjs.com/"&gt;Leaflet&lt;/a&gt; is a great JS library specifically for creating maps and works well with &lt;a href="https://www.mapbox.com/"&gt;Mapbox&lt;/a&gt; for some very pretty built-in styling. Check out Chris Given's &lt;a href="https://github.com/cmgiven/bikeshare-odds"&gt;Bikeshare Odds&lt;/a&gt; project for a great demo of creating an interactive map viewable over time.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Mapping airport data&lt;/h3&gt;
+&lt;p&gt;We're going to analyze flight data, eventually creating a 3D rendering of flight patterns by volume projected onto an interactive globe. To get started, though, let's set up the quickest and simplest map possible using &lt;a href="https://cartodb.com"&gt;CartoDB&lt;/a&gt; to get an idea of our available data.&lt;/p&gt;
+&lt;p&gt;Make an account at &lt;a href="https://cartodb.com/signup"&gt;CartoDB&lt;/a&gt; and browse around the platform. You'll discover that CartoDB actually already has all the &lt;a href="https://fheisler.cartodb.com/dashboard/common_data/Cultural%20datasets"&gt;US airports&lt;/a&gt; as well as some other common datasets available for immediate use.&lt;/p&gt;
+&lt;p&gt;We'll eventually want international data, however, so from &lt;a href="http://openflights.org/data.html"&gt;openflights.org&lt;/a&gt;, download the CSV file &lt;a href="https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/airports.dat?format=raw"&gt;airports.dat&lt;/a&gt; to get the locations, names and codes of airports around the world.&lt;/p&gt;
+&lt;p&gt;Rename the extension to a proper .CSV, then upload this &lt;code&gt;airports.csv&lt;/code&gt; file as a new table in CartoDB.&lt;/p&gt;
+&lt;p&gt;Take a look at the table in CartoDB; you can double-click and rename &lt;code&gt;field_7&lt;/code&gt; to &lt;code&gt;lat&lt;/code&gt; and &lt;code&gt;field_8&lt;/code&gt; to &lt;code&gt;lon&lt;/code&gt;. Click on the orange "GEO" button next to the column named &lt;code&gt;the_geom&lt;/code&gt;, then specify your longitude and latitude. Rename &lt;code&gt;field_5&lt;/code&gt; to &lt;code&gt;code&lt;/code&gt;; we'll be merging in data based on the airport code later.&lt;/p&gt;
+&lt;p&gt;And... voilà! You can already toggle over to &lt;code&gt;MAP VIEW&lt;/code&gt; at the top and see a map of all your airport data. Click on the wizard button on the right side and switch to a choropleth map to get a quick idea of the density of airports around the world:&lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img alt="map1" src="/images/map1.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;Now let's add some actual flight data, available from BTS.&lt;/p&gt;
+&lt;p&gt;The &lt;a href="http://www.transtats.bts.gov/DatabaseInfo.asp?DB_ID=120&amp;amp;DB_Short_Name=On-Time&amp;amp;DB_Name=Airline%20On-Time%20Performance%20Data&amp;amp;Link=0&amp;amp;DB_URL=Subject_ID=3&amp;amp;Subject_Desc=Passenger%20Travel&amp;amp;Mode_ID2=0"&gt;description&lt;/a&gt; doesn't really make it clear &lt;em&gt;which&lt;/em&gt; 1%+ of non-stop domestic flights were covered, but we'll assume the file &lt;a href="http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=236&amp;amp;DB_Short_Name=On-Time"&gt;available here&lt;/a&gt; is a representative sample of US air carrier flights. We'll need the &lt;code&gt;Origin&lt;/code&gt;, &lt;code&gt;Destination&lt;/code&gt;, and (number of total) &lt;code&gt;Flights&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;You now have a couple options; you &lt;em&gt;could&lt;/em&gt; load this dataset in as a new CartoDB table and collapse + export it using their SQL editor:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;origin&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;count&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;flights&lt;/span&gt;
+&lt;span class="k"&gt;GROUP&lt;/span&gt; &lt;span class="k"&gt;BY&lt;/span&gt; &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;origin&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;However, this will take you over your allotted 50MB, so you wouldn't be able to export this created set without signing up for a paid plan. Plus, it's SQL, so in this case I collapsed the file with a quick Python script instead:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;collections&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Counter&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;csv&lt;/span&gt;
+
+&lt;span class="n"&gt;flight_counts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Counter&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;flights.csv&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;r&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;infile&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;csvreader&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;csv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reader&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;infile&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;csvreader&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;# skip header row&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;csvreader&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;orig_dest&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+        &lt;span class="n"&gt;flight_counts&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;update&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;orig_dest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;flight_counts.csv&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;w&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;outfile&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;csvwriter&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;csv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;writer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;outfile&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;csvwriter&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;writerow&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;code&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;count&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;flight_counts&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;items&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+        &lt;span class="n"&gt;csvwriter&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;writerow&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You can load this CSV file of total flight counts by airport code into CartoDB, then choose "options" in the top right and merge the airports table onto the &lt;code&gt;code&lt;/code&gt; in the flight data.&lt;/p&gt;
+&lt;p&gt;Click on the "infowindow" button on the right (below the wizard) and enable the airport code as a mouse hover interaction, then take a look:&lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img alt="map2" src="/images/map2.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;We can see that we're missing a &lt;em&gt;lot&lt;/em&gt; of smaller airports, but we do have coverage and counts that are roughly as expected for the major US airports.&lt;/p&gt;
+&lt;p&gt;This dataset includes some other interesting data points that could be interesting and simple enough to analyze; for instance, you could look at weather delays over geographic location and time using a &lt;a href="http://docs.cartodb.com/tutorials/introduction_torque.html"&gt;torque map&lt;/a&gt;!&lt;/p&gt;
+&lt;h3&gt;Visualizing airline data on a globe&lt;/h3&gt;
+&lt;p&gt;Let's turn this up a notch with &lt;a href="http://threejs.org/"&gt;Three.js&lt;/a&gt; and the &lt;a href="http://www.chromeexperiments.com/globe"&gt;WebGL Globe&lt;/a&gt; to visualize flight data on a 3D globe.&lt;/p&gt;
+&lt;p&gt;We're going to create a page &lt;code&gt;map.html&lt;/code&gt; available &lt;a href="/demos/globe/map.html"&gt;here&lt;/a&gt;, based on the WebGL Globe &lt;a href="https://github.com/dataarts/webgl-globe/#basic-usage"&gt;basic example&lt;/a&gt; (with a few tweaks and a bugfix for how options are actually passed):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;html&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;head&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;meta&lt;/span&gt; &lt;span class="na"&gt;charset&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;utf-8&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;title&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;Flight data visualization&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;title&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;helpers/three.min.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;globe/globe.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;head&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;body&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;id&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;#39;container&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+
+    &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class="c1"&gt;// Where to put the globe?&lt;/span&gt;
+      &lt;span class="kd"&gt;var&lt;/span&gt; &lt;span class="nx"&gt;container&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;document&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;getElementById&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;container&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+
+      &lt;span class="c1"&gt;// Make the globe&lt;/span&gt;
+      &lt;span class="kd"&gt;var&lt;/span&gt; &lt;span class="nx"&gt;globe&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nx"&gt;DAT&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;Globe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="nx"&gt;container&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+
+      &lt;span class="c1"&gt;// We&amp;#39;re going to ask a file for the JSON data.&lt;/span&gt;
+      &lt;span class="kd"&gt;var&lt;/span&gt; &lt;span class="nx"&gt;xhr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="nx"&gt;XMLHttpRequest&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+
+      &lt;span class="c1"&gt;// Where do we get the data?&lt;/span&gt;
+      &lt;span class="nx"&gt;xhr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;GET&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;flight_data.json&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kc"&gt;true&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+
+      &lt;span class="c1"&gt;// What do we do when we have it?&lt;/span&gt;
+      &lt;span class="nx"&gt;xhr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;onreadystatechange&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+
+        &lt;span class="c1"&gt;// If we&amp;#39;ve received the data&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="nx"&gt;xhr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;readyState&lt;/span&gt; &lt;span class="o"&gt;===&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nx"&gt;xhr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;status&lt;/span&gt; &lt;span class="o"&gt;===&lt;/span&gt; &lt;span class="mi"&gt;200&lt;/span&gt; &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+
+          &lt;span class="c1"&gt;// Parse the JSON&lt;/span&gt;
+          &lt;span class="kd"&gt;var&lt;/span&gt; &lt;span class="nx"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;JSON&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;parse&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="nx"&gt;xhr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;responseText&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+
+          &lt;span class="c1"&gt;// Tell the globe about your JSON data&lt;/span&gt;
+          &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="kd"&gt;var&lt;/span&gt; &lt;span class="nx"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="nx"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;length&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="nx"&gt;i&lt;/span&gt; &lt;span class="o"&gt;++&lt;/span&gt; &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="c1"&gt;// Incorrect version in current example:&lt;/span&gt;
+            &lt;span class="c1"&gt;// globe.addData( data[i][1], &amp;#39;magnitude&amp;#39;, data[i][0] );&lt;/span&gt;
+
+            &lt;span class="nx"&gt;globe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;addData&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nx"&gt;i&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;format&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;magnitude&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;});&lt;/span&gt;
+          &lt;span class="p"&gt;}&lt;/span&gt;
+
+          &lt;span class="c1"&gt;// Create the geometry&lt;/span&gt;
+          &lt;span class="nx"&gt;globe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;createPoints&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+
+          &lt;span class="c1"&gt;// Begin animation&lt;/span&gt;
+          &lt;span class="nx"&gt;globe&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;animate&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt;
+
+        &lt;span class="p"&gt;}&lt;/span&gt;
+      &lt;span class="p"&gt;};&lt;/span&gt;
+
+      &lt;span class="c1"&gt;// Begin request&lt;/span&gt;
+      &lt;span class="nx"&gt;xhr&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;send&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt; &lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;body&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;html&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We'll need to prepare some JSON data to be loaded in from the file &lt;code&gt;flight_data.json&lt;/code&gt;. For &lt;code&gt;globe.js&lt;/code&gt; to read properly, this should be of the format:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;lat1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lon1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mag1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lat2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lon2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mag2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="p"&gt;]]]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Above, the &lt;code&gt;mag&lt;/code&gt; values are just each total count normalized by the maximum count in the data. We can prepare this file from the previous dataset using a slightly modified preprocessing script:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;csv&lt;/span&gt;
+
+&lt;span class="n"&gt;data_dict&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;flight_pos_counts.csv&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;rU&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;infile&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;csvreader&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;csv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reader&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;infile&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;csvreader&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;# skip header row&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;csvreader&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+        &lt;span class="n"&gt;lat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lon&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;13&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;14&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;data_dict&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;lat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lon&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt;
+
+&lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;span class="n"&gt;max_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;float&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;max&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data_dict&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="p"&gt;()))&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;lat_lon&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;data_dict&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;items&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;lat_lon&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;lat_lon&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;max_count&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;flight_data.json&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;w&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;outfile&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;outfile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;[[&amp;quot;counts&amp;quot;,[{}]]]&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;format&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;,&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You can download this prepared dataset directly &lt;a href="/demos/globe/flight_data.json"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Finally, we'll need to be able to point to &lt;a href="https://github.com/dataarts/webgl-globe/blob/master/globe/globe.js"&gt;globe.js&lt;/a&gt; and, from within that script, a &lt;a href="https://github.com/dataarts/webgl-globe/blob/master/globe/world.jpg"&gt;world map&lt;/a&gt; to overlay on the globe.&lt;/p&gt;
+&lt;p&gt;Cross origin requests will(/should) be disabled by your browser, meaning that you won't be able to load static files from disk into the page, so you'll need to run everything from a local host; just &lt;code&gt;cd&lt;/code&gt; into your project directory and run a server with:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;python -m SimpleHTTPServer
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;With everything properly connected, you should now be able to visit the fully functional page with an interactive globe at:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;http://localhost:8000/map.html
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;center&gt;&lt;img alt="map3" src="/images/map3.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;h3&gt;Visualizing flight paths in 3D&lt;/h3&gt;
+&lt;p&gt;As a warning, this section is still a work in progress! We're going to visualize flights &lt;em&gt;between&lt;/em&gt; airports (specifically non-stop flights with at least one airport in the US) using the BTS dataset &lt;a href="http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=261"&gt;T-100 International Segment (All Carriers)&lt;/a&gt;, which they describe as follows:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;This table contains international non-stop segment data reported by both U.S. and foreign air carriers, including carrier, origin, destination, aircraft type and service class for transported passengers, freight and mail, available capacity, scheduled departures, departures performed, aircraft hours, and load factor when at least one point of service is in the United States or one of its territories. International flight data is released 3 months after domestic data. Flights with both origin and destination in a foreign country are not included.&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;We'll grab &lt;code&gt;DepPerformed&lt;/code&gt;, &lt;code&gt;Origin&lt;/code&gt; and &lt;code&gt;Destination&lt;/code&gt; from this table, join with the &lt;code&gt;airports.dat&lt;/code&gt; file from above, and (again, after some preprocessing) prepare a file &lt;code&gt;flight_traffic.json&lt;/code&gt; along the following format, where the magnitude &lt;code&gt;mag1&lt;/code&gt; of each lat/lon origin and destination pair is the count of flights divided by the maximum count for any pair:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;orig_lat1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;orig_lon1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;dest_lat1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;dest_lon1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mag1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;orig_lat2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;orig_lon2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;dest_lat2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;dest_lon2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mag2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This final table is available &lt;a href="/demos/globe/flight_traffic.json"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Now for the tricky part: displaying arcs between airports as "flight" patterns... I created a modified &lt;code&gt;globe2.js&lt;/code&gt; available &lt;a href="/demos/globe/globe2.js"&gt;here&lt;/a&gt;, which in addition to an &lt;code&gt;addPoint()&lt;/code&gt; function includes an &lt;code&gt;addPath()&lt;/code&gt; function to draw 3D splines connection two points on the globe.&lt;/p&gt;
+&lt;p&gt;My trigonometry is a little rusty, so I'm still working out the details of how to interpolate spherical coordinates properly. For now, I used a &lt;em&gt;very&lt;/em&gt; hacky system of finding a "midpoint" between the two points, which mostly only works for flights around the US depending on the signs of the coordinate pairs; you'll notice for instance that all the flights to Europe currently dip into the earth before reaching their destinations! I then generate a smooth spline using those three points.&lt;/p&gt;
+&lt;p&gt;You can see the results, which I limit to only the busiest airport pairs to cut down somewhat on clutter, &lt;a href="/demos/globe/map2.html"&gt;here as a live demo&lt;/a&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img alt="map4" src="/images/map4.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;I will update this post when/if I properly rework the flight paths; for now, all of the paths calculated in spherical coordinates seem to stray &lt;em&gt;slightly&lt;/em&gt; off course... One day, it might even look half as cool as this &lt;a href="http://nisatapps.prio.org/armsglobe/"&gt;absolutely crazy visualization&lt;/a&gt; of global firearms trade built on work from the crazy Google Ideas. Something to aspire to, but maybe a bit complex for a monthly challenge!&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Fletcher Heisler</dc:creator><pubDate>Thu, 08 Jan 2015 00:00:00 +0100</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2015-01-08:blog/using-cartodb-and-threejs-for-mapping/</guid><category>charting</category><category>d3</category></item><item><title>Monthly Challenge: Natural Language Processing</title><link>http://engineroom.trackmaven.com/blog/monthly-challenge-natural-language-processing/</link><description>&lt;p&gt;Our topic for this month's &lt;a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/"&gt;Monthly Challenge meetup&lt;/a&gt; is NLP! In this post, we'll get you started with one possibility: using &lt;a href="http://pandas.pydata.org/"&gt;pandas&lt;/a&gt; and Python's &lt;a href="http://www.nltk.org/"&gt;Natural Language Toolkit&lt;/a&gt; to analyze the contents your own Gmail inbox. For those of you who are continuing projects from our last &lt;a href="www.meetup.com/TrackMaven-Monthly-Challenge/events/213296342/"&gt;monthly challenge on Elasticsearch&lt;/a&gt;, we'll also include some code to make use of &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/client/python-api/master/"&gt;Elasticsearch&lt;/a&gt; as well at the end of the post.&lt;/p&gt;
+&lt;p&gt;There are endless possibilities for an NLP-inspired project:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://en.wikipedia.org/wiki/Sentiment_analysis"&gt;Sentiment analysis&lt;/a&gt; to put a measure to the emotional content of online reviews, social media, etc. For instance, are tweets about a topic trending to positive or negative opinions? Does a news site cover certain topics using more positive/negative terms or frequently use words correlated with certain emotions? Is this "positive" Yelp review sarcastic? (Good luck with that last one!)&lt;/li&gt;
+&lt;li&gt;Analyze the use of language in literature to measure trends in vocabulary or writing style over time/regions/authors.&lt;/li&gt;
+&lt;li&gt;Flag content as spam by identifying key characteristics of the language used.&lt;/li&gt;
+&lt;li&gt;Use &lt;a href="http://en.wikipedia.org/wiki/Topic_model"&gt;topic extraction&lt;/a&gt; to group reviews into similar categories based on what main topics they cover.&lt;/li&gt;
+&lt;li&gt;Create a better real-time Twitter search by combining Elasticsearch with &lt;a href="http://wordnet.princeton.edu/"&gt;WordNet&lt;/a&gt; via &lt;a href="http://www.nltk.org/howto/wordnet.html"&gt;NLTK's corpus&lt;/a&gt; to measure term similarity on Twitter's streaming API&lt;/li&gt;
+&lt;li&gt;Join &lt;a href="https://github.com/dariusk/NaNoGenMo-2014"&gt;NaNoGenMo&lt;/a&gt; and write some code that generates its own novel! There are plenty of ideas and resources &lt;a href="https://github.com/dariusk/NaNoGenMo-2014/issues/1"&gt;here&lt;/a&gt; to get started.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Load a Gmail inbox into pandas&lt;/h2&gt;
+&lt;p&gt;Let's get started with the example project! First off, we'll need some data. Prepare an archive of &lt;em&gt;only&lt;/em&gt; your Gmail data (this will include what's currently in your spam and trash folders) here:&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://www.google.com/settings/takeout"&gt;https://www.google.com/settings/takeout&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Now go take a walk. With a 5.1G inbox, my 2.8G archive took a little over an hour to send.&lt;/p&gt;
+&lt;p&gt;Once you've got the file and a local environment set up for the project, use the script below to read the data into pandas (I highly recommend using &lt;a href="http://ipython.org/"&gt;IPython&lt;/a&gt; for data analysis):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;mailbox&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;mbox&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;store_content&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_payload&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;decode&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;contents&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;subject&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;subject&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;body&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;from&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;from&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;to&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;to&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;date&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;labels&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;X-Gmail-Labels&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;epilogue&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;epilogue&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;contents&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ignore_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Create an empty DataFrame with the relevant columns&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;columns&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;subject&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;body&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;from&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;to&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;labels&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;epilogue&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Import your downloaded mbox file&lt;/span&gt;
+&lt;span class="n"&gt;box&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;mbox&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;All mail Including Spam and Trash.mbox&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;fails&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;box&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_content_type&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;text/plain&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;store_content&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_multipart&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+            &lt;span class="c1"&gt;# Grab any plaintext from multipart messages&lt;/span&gt;
+            &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;part&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_payload&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;part&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_content_type&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;text/plain&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;store_content&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;part&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_payload&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;decode&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+                    &lt;span class="k"&gt;break&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;fails&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Above, we used Python's &lt;a href="https://docs.python.org/2/library/mailbox.html"&gt;mailbox&lt;/a&gt; module to read and parse "mbox"-formatted messages. This could certainly be done more elegantly (for instance, the messages include a lot of extraneous, duplicated data such as inline messages with "&amp;gt;&amp;gt;&amp;gt;" in replies). Another issue is the inability to handle some special characters, which for simplicity we discard for now; check that you're not ignoring a significant proportion of your inbox here!&lt;/p&gt;
+&lt;p&gt;Note that we're not actually going to make use of anything but the subject lines, but you could perform all sorts of interesting analysis on timestamps, message bodies, classify by tags, etc. Given that this is just a post to get you started (and happens to show results from my own inbox), I don't want to go into &lt;em&gt;too&lt;/em&gt; much detail :)&lt;/p&gt;
+&lt;h2&gt;Finding common terms&lt;/h2&gt;
+&lt;p&gt;Now that we've got some data, let's get the ten most common terms out of all subject lines:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# Top 10 most common subject words&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;collections&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Counter&lt;/span&gt;
+
+&lt;span class="n"&gt;subject_word_bag&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;subject&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;apply&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lower&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot; &amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="n"&gt;Counter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;subject_word_bag&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;most_common&lt;/span&gt;&lt;span class="p"&gt;()[:&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="p"&gt;[(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;re:&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;8508&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;-&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1188&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;the&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;819&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;fwd:&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;666&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;to&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;572&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;new&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;530&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;your&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;528&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;for&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;498&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;a&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;463&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;course&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;452&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Well, that was underwhelming. Let's try limiting out some common terms:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;nltk.corpus&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;stopwords&lt;/span&gt;
+&lt;span class="n"&gt;stops&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;unicode&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;word&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;word&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;stopwords&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;words&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;english&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;re:&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;fwd:&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;-&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;subject_words&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;word&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;word&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;subject_word_bag&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;word&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lower&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;stops&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;Counter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;subject_words&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;most_common&lt;/span&gt;&lt;span class="p"&gt;()[:&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="p"&gt;[(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;new&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;530&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;course&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;452&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;trackmaven&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;334&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;question&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;334&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;post&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;286&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;content&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;245&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;payment&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;244&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;blog&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;241&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;forum&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;236&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;update&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;220&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Besides removing a couple of the least useful terms on our own, we used NLTK's stopwords corpus, which first needs to be install in a &lt;a href="http://www.nltk.org/data.html"&gt;rather goofy way&lt;/a&gt;. Now we can see some words that are typical to my inbox but not necessarily as typical to find in English text in general!&lt;/p&gt;
+&lt;h2&gt;Bigrams and collocations&lt;/h2&gt;
+&lt;p&gt;Another interesting measurement allowed by NLTK is the concept of &lt;a href="http://en.wikipedia.org/wiki/Collocation"&gt;collocations&lt;/a&gt;. First, let's take a look at common "bigrams" - i.e, which sets of two words frequently appear together in pairs:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;nltk&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;collocations&lt;/span&gt;
+&lt;span class="n"&gt;bigram_measures&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;collocations&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;BigramAssocMeasures&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;bigram_finder&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;collocations&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;BigramCollocationFinder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_words&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;subject_words&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Filter to top 20 results; otherwise this will take a LONG time to analyze&lt;/span&gt;
+&lt;span class="n"&gt;bigram_finder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;apply_freq_filter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;20&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;bigram&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;bigram_finder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;score_ngrams&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;bigram_measures&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;raw_freq&lt;/span&gt;&lt;span class="p"&gt;)[:&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt;
+    &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;bigram&lt;/span&gt;
+
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;forum&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;content&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.005839453284373725&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;new&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;forum&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.005839453284373725&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;blog&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;post&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.00538045695634435&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;domain&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;names&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.004870461036311709&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;alpha&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;release&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.0028304773561811506&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;default&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;widget.&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.0026519787841697267&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;purechat:&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;question&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.0026519787841697267&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;using&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;default&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.0026519787841697267&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;release&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;third&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.002575479396164831&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;trackmaven&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;application&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="mf"&gt;0.002524479804161567&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We could repeat the same process for trigrams (or other ngrams) to find longer phrases; in this case, "new forum content" would appear as a top trigram, but in the case of the above list it ended up getting split into two pieces at the top of the bigram list.&lt;/p&gt;
+&lt;p&gt;Another slightly different type of collocation measurement is based on &lt;a href="http://en.wikipedia.org/wiki/Pointwise_mutual_information"&gt;pointwise mutual information&lt;/a&gt;; essentially, this measures how likely one word is to appear given that we've seen the other word in a specific document &lt;em&gt;relative to&lt;/em&gt; their general individual frequencies throughout all documents. For instance, if my email subjects use the word "blog" and/or the word "post" a lot in general, then the bigram "blog post" is not as interesting of a signal since it's still likely that one word might appear &lt;em&gt;not&lt;/em&gt; paired with the other. Using this measure, we get a different set of bigrams:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;bigram&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;bigram_finder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nbest&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;bigram_measures&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pmi&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;bigram&lt;/span&gt;
+
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;4:30pm&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;5pm&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;motley&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;fool&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;60,&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;900,&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;population&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;cap&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;simple&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;goods&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;So, I don't get a lot of email subjects mentioning the words "motley" or "fool" - but when I see either one, it's probably something "Motley Fool"-related!&lt;/p&gt;
+&lt;h2&gt;Sentiment analysis&lt;/h2&gt;
+&lt;p&gt;Finally, let's try out some sentiment analysis. For a quick start, we can use the &lt;a href="http://textblob.readthedocs.org/en/dev/index.html"&gt;TextBlob&lt;/a&gt; library, which sits on top of NLTK to provide simple access to lots of common NLP tasks. We can use its built-in &lt;a href="http://textblob.readthedocs.org/en/dev/quickstart.html#sentiment-analysis"&gt;sentiment analysis&lt;/a&gt; (which relies on &lt;a href="http://www.clips.ua.ac.be/pages/pattern-en#sentiment"&gt;pattern&lt;/a&gt;) to calculate the "polarity" of subject lines, from -1.0 for highly negative sentiment up to 1.0 for positive, with 0 being neutral (lack of a clear signal):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;textblob&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;TextBlob&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;feels&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;subject&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;apply&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;TextBlob&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;unicode&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;errors&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ignore&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sentiment&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;polarity&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Output a few subject lines with their calculated sentiment scores&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;subject&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;feels&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+
+&lt;span class="mi"&gt;0&lt;/span&gt;                                      &lt;span class="n"&gt;Fw&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;that&lt;/span&gt;    &lt;span class="mf"&gt;0.00000&lt;/span&gt;
+&lt;span class="mi"&gt;1&lt;/span&gt;                                             &lt;span class="n"&gt;Fw&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Review&lt;/span&gt;    &lt;span class="mf"&gt;0.00000&lt;/span&gt;
+&lt;span class="mi"&gt;2&lt;/span&gt;                          &lt;span class="n"&gt;Re&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Thanks&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;your&lt;/span&gt; &lt;span class="n"&gt;purchase&lt;/span&gt;&lt;span class="err"&gt;!&lt;/span&gt;       &lt;span class="mf"&gt;0.25&lt;/span&gt;
+&lt;span class="mi"&gt;3&lt;/span&gt;            &lt;span class="n"&gt;Re&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Monte&lt;/span&gt; &lt;span class="n"&gt;Carlo&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;little&lt;/span&gt; &lt;span class="n"&gt;bit&lt;/span&gt; &lt;span class="n"&gt;confusing&lt;/span&gt; &lt;span class="err"&gt;!&lt;/span&gt;   &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;0.28125&lt;/span&gt;
+&lt;span class="o"&gt;...&lt;/span&gt;
+&lt;span class="mi"&gt;19481&lt;/span&gt;                              &lt;span class="n"&gt;Re&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Great&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;see&lt;/span&gt; &lt;span class="n"&gt;you&lt;/span&gt;&lt;span class="err"&gt;!&lt;/span&gt;     &lt;span class="mf"&gt;1.0000&lt;/span&gt;
+&lt;span class="mi"&gt;19482&lt;/span&gt;                                            &lt;span class="n"&gt;Re&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;API&lt;/span&gt;       &lt;span class="mf"&gt;0.00&lt;/span&gt;
+&lt;span class="mi"&gt;19483&lt;/span&gt;                                           &lt;span class="n"&gt;Question&lt;/span&gt;       &lt;span class="mf"&gt;0.00&lt;/span&gt;
+&lt;span class="mi"&gt;19484&lt;/span&gt;                              &lt;span class="n"&gt;Re&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;HAPPY&lt;/span&gt; &lt;span class="n"&gt;BIRTHDAY&lt;/span&gt;&lt;span class="err"&gt;!!!&lt;/span&gt;    &lt;span class="mf"&gt;1.00000&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Using Elasticsearch&lt;/h2&gt;
+&lt;p&gt;If you need a primer on using Elasticsearch in Python, check out our previous &lt;a href="http://engineroom.trackmaven.com/blog/first-monthly-challenge-elasticsearch/"&gt;monthly challenge blog post&lt;/a&gt; to get started. If you've already got a similar project going or want to try analyzing your mail in Elasticsearch, you can run the following (while your ES instance is running) to index your inbox:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;mailbox&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;mbox&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;elasticsearch&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;
+
+&lt;span class="n"&gt;mapping&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="s2"&gt;&amp;quot;message&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="s2"&gt;&amp;quot;_timestamp&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;enabled&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;path&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;format&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;E, d MMM yyyy HH:mm:ss Z&amp;quot;&lt;/span&gt;
+        &lt;span class="p"&gt;},&lt;/span&gt;
+        &lt;span class="s2"&gt;&amp;quot;properties&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;subject&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;body&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;from&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;to&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                &lt;span class="s2"&gt;&amp;quot;format&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;E, d MMM yyyy HH:mm:ss Z&amp;quot;&lt;/span&gt;
+            &lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;labels&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;epilogue&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="n"&gt;es&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indices&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;gmail&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# When re-running with modifications, you&amp;#39;ll need to remove the current index:&lt;/span&gt;
+&lt;span class="c1"&gt;# es.indices.delete_mapping(index=&amp;quot;gmail&amp;quot;, doc_type=&amp;quot;message&amp;quot;)&lt;/span&gt;
+&lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indices&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;put_mapping&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;gmail&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;doc_type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;message&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;mapping&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;store_content&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_payload&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;decode&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;contents&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;subject&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;subject&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;body&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;from&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;from&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;to&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;to&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;date&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;labels&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;X-Gmail-Labels&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;epilogue&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;epilogue&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;gmail&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;doc_type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;message&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;contents&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;fails&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;span class="n"&gt;box&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;mbox&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;All mail Including Spam and Trash.mbox&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;box&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_content_type&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;text/plain&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;store_content&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_multipart&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+            &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;part&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_payload&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;part&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_content_type&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;text/plain&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="n"&gt;store_content&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;part&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_payload&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;decode&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+                    &lt;span class="k"&gt;break&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;fails&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We can then quickly repeat a few of our pandas analyses in an Elasticsearch-friendly way. For instance, let's get the most common terms out of all subject lines:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;curl -XPOST &amp;#39;http://localhost:9200/gmail/_search?pretty=true&amp;amp;search_type=count&amp;#39; -d&amp;#39;
+{
+    &amp;quot;aggregations&amp;quot;: {
+        &amp;quot;most_popular_term&amp;quot;: {
+            &amp;quot;terms&amp;quot;: {
+                &amp;quot;field&amp;quot;: &amp;quot;body&amp;quot;, 
+                &amp;quot;size&amp;quot;: 15,
+                &amp;quot;stopwords&amp;quot;: [&amp;quot;the&amp;quot;, &amp;quot;and&amp;quot;]
+            }
+        }
+    }
+}&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;As before, the results are less than stunning by default:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;{
+  &amp;quot;took&amp;quot; : 54,
+  &amp;quot;timed_out&amp;quot; : false,
+  &amp;quot;_shards&amp;quot; : {
+    &amp;quot;total&amp;quot; : 5,
+    &amp;quot;successful&amp;quot; : 5,
+    &amp;quot;failed&amp;quot; : 0
+  },
+  &amp;quot;hits&amp;quot; : {
+    &amp;quot;total&amp;quot; : 17466,
+    &amp;quot;max_score&amp;quot; : 0.0,
+    &amp;quot;hits&amp;quot; : [ ]
+  },
+  &amp;quot;aggregations&amp;quot; : {
+    &amp;quot;most_popular_term&amp;quot; : {
+      &amp;quot;buckets&amp;quot; : [ {
+        &amp;quot;key&amp;quot; : &amp;quot;the&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 15330
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;to&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 15310
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;and&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 14303
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;you&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 14254
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;for&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 14081
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;a&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 13751
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;of&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 12552
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;is&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 11864
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;on&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 11091
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;i&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 10766
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;at&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 10653
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;fletcher&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 10571
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;your&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 10468
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;in&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 10343
+      }, {
+        &amp;quot;key&amp;quot; : &amp;quot;if&amp;quot;,
+        &amp;quot;doc_count&amp;quot; : 10293
+      } ]
+    }
+  }
+}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We could in this case configure a &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/custom-analyzers.html"&gt;custom analyzer&lt;/a&gt; that uses the &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/using-stopwords.html"&gt;stopwords token filter&lt;/a&gt;. Of course, the same TextBlob/NLTK analyses could be used directly on Elasticsearch-indexed content just as well.&lt;/p&gt;
+&lt;p&gt;Next steps: analyze your inbox over time; see if you can classify messages to determine sender/label/spam based attributes of the body text; use &lt;a href="http://en.wikipedia.org/wiki/Latent_semantic_indexing"&gt;latent semantic indexing&lt;/a&gt; to uncover the most common general topics covered; feed your sent folder into a Markov model combined with some part-of-speech tagging to generate seemingly coherent auto-replies...&lt;/p&gt;
+&lt;p&gt;Please &lt;a href="mailto:engineroom@trackmaven.com"&gt;let us know&lt;/a&gt; if you try out any interesting side projects using NLP - bonus points if you include an open-source repo. You can see previous presentations at &lt;a href="http://challenge.hackpad.com"&gt;challenge.hackpad.com&lt;/a&gt; for more inspiration!&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Fletcher Heisler</dc:creator><pubDate>Mon, 24 Nov 2014 00:00:00 +0100</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2014-11-24:blog/monthly-challenge-natural-language-processing/</guid><category>nlp</category><category>elasticsearch</category></item><item><title>Monthly Challenge wrap-up: Elasticsearch</title><link>http://engineroom.trackmaven.com/blog/monthly-challenge-wrap-up-elasticsearch/</link><description>&lt;p&gt;Thanks to everyone who came out and presented at our inaugural &lt;a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/"&gt;Monthly Challenge meetup&lt;/a&gt;! We had a great variety of Elasticsearch-related projects. Here's a quick rundown from the night:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Our &lt;a href="http://engineroom.trackmaven.com/blog/first-monthly-challenge-elasticsearch/"&gt;jumpstart blog post&lt;/a&gt; introduced a basic analysis of top reddit IAMA posts using Python's &lt;a href="https://www.elasticsearch.org/guide/en/elasticsearch/client/python-api/current/"&gt;elasticsearch&lt;/a&gt; client, then visualized some trip history data from &lt;a href="http://www.capitalbikeshare.com/trip-history-data"&gt;Capital Bikeshare&lt;/a&gt; using &lt;a href="http://www.elasticsearch.org/overview/kibana/"&gt;Kibana&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://twitter.com/joshfinnie"&gt;Josh Finnie&lt;/a&gt; shows how to search and "recommend" beer selections with Elasticsearch. Check out the &lt;a href="https://github.com/joshfinnie/beer-rec"&gt;GitHub repo&lt;/a&gt; and &lt;a href="http://www.joshfinnie.com/talks/beer-search-and-recs-in-es/#/"&gt;slides&lt;/a&gt;!&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://twitter.com/TomPanning"&gt;Tom Panning&lt;/a&gt; analyzes NIH data available through the &lt;a href="http://report.nih.gov/"&gt;RePORT portal&lt;/a&gt;. Check out the &lt;a href="https://github.com/tpanning/nih-report"&gt;GitHub repo&lt;/a&gt;!&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://twitter.com/mlcamilli"&gt;Matt Camilli&lt;/a&gt; enlightens us on how to use headless browsers to scrape Steam game reviews and put them in Elasticsearch. Check out the &lt;a href="https://github.com/mlcamilli/SteamReviewParser"&gt;GitHub repo&lt;/a&gt;!&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://twitter.com/wsankey"&gt;Will Sankey&lt;/a&gt; explores hospital violations using public CMS data. Check out the &lt;a href="http://slides.com/williamsankey/trackmaven-meetup-deck-11-12-2014"&gt;presentation slides&lt;/a&gt; and the &lt;a href="https://github.com/wsankey/elastic_health"&gt;GitHub repo&lt;/a&gt; of Ruby code.&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://twitter.com/cameronmaske"&gt;Cameron Maske&lt;/a&gt; shows off using Elasticsearch with geo spatial data! Take a look at the &lt;a href="https://github.com/cameronmaske/geo-dc"&gt;GitHub repo&lt;/a&gt; for grabbing geospatial data from DC.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Next month's topic will be &lt;em&gt;natural language processing&lt;/em&gt;; &lt;a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/events/218683569/"&gt;RSVP to the meetup&lt;/a&gt; and stay tuned for a blog post with some details to get you started. Some possible options...&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Sentiment analysis&lt;/li&gt;
+&lt;li&gt;Topic extraction&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://wordnet.princeton.edu/"&gt;WordNet&lt;/a&gt; relationships&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/dariusk/NaNoGenMo-2014"&gt;NaNoGenMo&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Fletcher Heisler</dc:creator><pubDate>Thu, 13 Nov 2014 00:00:00 +0100</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2014-11-13:blog/monthly-challenge-wrap-up-elasticsearch/</guid><category>elasticsearch</category></item><item><title>First Monthly Challenge: Elasticsearch!</title><link>http://engineroom.trackmaven.com/blog/first-monthly-challenge-elasticsearch/</link><description>&lt;p&gt;TrackMaven has begun hosting a &lt;a href="http://www.meetup.com/TrackMaven-Monthly-Challenge/"&gt;Monthly Challenge meetup&lt;/a&gt;! Each month, we will name a general topic, a new technology, or something in between. We'll collect a few resources and examples to get everyone started (hence this post), then we'll meet up in a month to share short presentations on everyone's new projects.&lt;/p&gt;
+&lt;p&gt;Our first topic is &lt;strong&gt;Elasticsearch&lt;/strong&gt;, an incredibly powerful search and analytics engine. Go &lt;a href="http://www.elasticsearch.org/overview/elasticsearch"&gt;here&lt;/a&gt; for a high level, buzzword-heavy overview, or just jump into &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/"&gt;the documentation&lt;/a&gt; if you're feeling bold.&lt;/p&gt;
+&lt;p&gt;Built on top of &lt;a href="http://lucene.apache.org/core/"&gt;Lucene&lt;/a&gt;, Elasticsearch is most frequently used to add full text search functionality; it comes out of the box with a rich query language that supports fuzzy matching and advanced &lt;a href="http://lucene.apache.org/core/3_0_3/queryparsersyntax.html"&gt;parsing patterns&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;We'll go into the details of a sample project to get you started below. A few Elasticsearch-inspired possibilities for projects might be:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Provide real-time text search over a large corpus (ie, some subset of &lt;a href="http://www.gutenberg.org/"&gt;Project Gutenburg&lt;/a&gt;, a bunch of product reviews, etc.)&lt;/li&gt;
+&lt;li&gt;Beyond search, &lt;em&gt;analysis&lt;/em&gt; of a large set of text: determine similar authors based on vocabulary, compare word usage over time using Google Books data, or see what stands out in the language of spammy emails&lt;/li&gt;
+&lt;li&gt;Task logging and visualization of results with &lt;a href="http://www.elasticsearch.org/overview/logstash/"&gt;Logstash&lt;/a&gt; and &lt;a href="http://www.elasticsearch.org/overview/kibana/"&gt;Kibana&lt;/a&gt;, the Elasticsearch &lt;a href="http://www.elasticsearch.org/webinars/introduction-elk-stack/"&gt;"ELK" stack&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Data analyses using &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html"&gt;aggregations&lt;/a&gt; on any sort of tabular data: financial records, movie reviews, census results...&lt;/li&gt;
+&lt;li&gt;Find unusual patterns in weather data or crime data by location&lt;/li&gt;
+&lt;li&gt;Create a better real-time Twitter search by combining Elasticsearch with NLP on Twitter's streaming API&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Elasticsearch communicates over a RESTful API using JSON. There are a &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/client/"&gt;large number of clients&lt;/a&gt; to get you started in many different languages. We will be using the &lt;a href="http://elasticsearch-py.readthedocs.org/en/master/"&gt;Python wrapper&lt;/a&gt; in our examples, but there is also &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/client/javascript-api/current/quick-start.html"&gt;Elasticsearch.js&lt;/a&gt; if that's more your style. You can also cURL POST data directly into Elasticsearch manually, although that may not scale well...&lt;/p&gt;
+&lt;p&gt;Let's get started! &lt;a href="http://www.elasticsearch.org/download/"&gt;Download ES&lt;/a&gt; and unpack it into a directory/project of your choice. You can then run:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;/bin/elasticsearch&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;By default, Elasticsearch sits on port 9200. Once it's booted up, you can visit:
+http://localhost:9200/&lt;/p&gt;
+&lt;p&gt;in your browser and see something like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;{
+  &amp;quot;status&amp;quot; : 200,
+  &amp;quot;name&amp;quot; : &amp;quot;Some Really Weird Name&amp;quot;,
+  &amp;quot;version&amp;quot; : {
+    &amp;quot;number&amp;quot; : &amp;quot;1.3.4&amp;quot;,
+    &amp;quot;build_hash&amp;quot; : &amp;quot;a70f3ccb52200f8f2c87e9c370c6597448eb3e45&amp;quot;,
+    &amp;quot;build_timestamp&amp;quot; : &amp;quot;2014-11-01T09:07:17Z&amp;quot;,
+    &amp;quot;build_snapshot&amp;quot; : false,
+    &amp;quot;lucene_version&amp;quot; : &amp;quot;4.9&amp;quot;
+  },
+  &amp;quot;tagline&amp;quot; : &amp;quot;You Know, for Search&amp;quot;
+}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now let's put some data in! Install the libraries &lt;code&gt;elasticsearch&lt;/code&gt; and &lt;code&gt;requests&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install elasticsearch requests
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You can then run this demo script to load in the top 100 Reddit "IAMA" posts (where a famous or otherwise interesting person makes a Reddit post to say "I Am A ___, Ask Me Anything"):&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;requests&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;elasticsearch&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;
+
+&lt;span class="n"&gt;es&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Return a response of the top 100 IAMA Reddit posts of all time&lt;/span&gt;
+&lt;span class="n"&gt;response&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;requests&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;http://api.reddit.com/r/iama/top/?t=all&amp;amp;limit=100&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+                        &lt;span class="n"&gt;headers&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;User-Agent&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;TrackMaven&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;})&lt;/span&gt;
+
+&lt;span class="n"&gt;fields&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;title&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;selftext&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;author&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;score&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+        &lt;span class="s1"&gt;&amp;#39;ups&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;downs&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;num_comments&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;url&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;created&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Loop through results and add each data dictionary to the ES &amp;quot;reddit&amp;quot; index&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;iama&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;enumerate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;response&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;data&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;children&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]):&lt;/span&gt;
+    &lt;span class="n"&gt;content&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;iama&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;data&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;doc&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;field&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;fields&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;doc&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;field&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;content&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;field&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;reddit&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;doc_type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;iama&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;id&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;doc&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Elasticsearch arranges everything by an &lt;strong&gt;indexes&lt;/strong&gt;, which can usually be thought of as the equivalent of a database in SQL terms, and &lt;strong&gt;document types&lt;/strong&gt;, which in SQL terms would be individual tables. Each document type can then hold chunks of JSON data (the &lt;strong&gt;body&lt;/strong&gt;), each labeled by an &lt;strong&gt;id&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;In Elasticsearch, if an index does not already exist then it will be created automatically when you first try to add data to it. Note that if we had just tried to run:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;iama&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;enumerate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;response&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;data&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;children&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]):&lt;/span&gt;
+    &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;reddit&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;doc_type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;iama&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;id&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;iama&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;data&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and stored &lt;em&gt;all&lt;/em&gt; the returned fields, we would have run into a parsing error. This is because Elasticsearch tries to guess at the data types best suited for storing on the fly, but it doesn't always guess correctly. This is one reason why it's a good idea to create a new index using an explicit &lt;a href="http://www.elasticsearch.org/guide/reference/mapping/"&gt;mapping&lt;/a&gt; to define how you want each field stored ahead of time.&lt;/p&gt;
+&lt;p&gt;Now that the index is populated with data, you can run search queries against Elasticsearch through cURL or directly in your browser. Try these out:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;http://localhost:9200/reddit/iama/_search?pretty=true&amp;amp;size=3
+http://localhost:9200/reddit/iama/_search?pretty=true&amp;amp;q=title:almost
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The Elasticsearch documentation &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl.html"&gt;here&lt;/a&gt; gives some more examples of the types of queries you can make.&lt;/p&gt;
+&lt;p&gt;Let's use the Python wrapper to make some queries as well:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;elasticsearch&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;
+
+&lt;span class="n"&gt;es&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Fetch a specific result&lt;/span&gt;
+&lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;reddit&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;doc_type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;iama&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;id&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_source&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Update the index to be able to query against it&lt;/span&gt;
+&lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indices&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;reddit&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Query for results: nothing will match this author&lt;/span&gt;
+&lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;search&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;reddit&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; 
+                &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;query&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;match&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;author&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;no results here!&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;}}})&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Query for all results (no matching criteria)&lt;/span&gt;
+&lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;search&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;reddit&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;query&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;match_all&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{}}})&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;hits&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;total&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;hits&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;hits&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_source&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;title&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Query based on text appearing in the title&lt;/span&gt;
+&lt;span class="c1"&gt;# (by default matches across capitalization, pluralization, etc)&lt;/span&gt;
+&lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;search&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;reddit&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;query&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;match&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;title&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;obama&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;}}})&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;hits&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;total&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;hits&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;hits&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;_source&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;title&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;At this point, you could build more functionality around the built-in search or use &lt;a href="http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-aggregations.html"&gt;aggregations&lt;/a&gt; to perform broader analysis on the data.&lt;/p&gt;
+&lt;p&gt;For now, let's try working with some time series data so that we can make some pretty charts. Download a CSV of some &lt;a href="http://www.capitalbikeshare.com/trip-history-data"&gt;trip history data&lt;/a&gt; from Capital Bikeshare.&lt;/p&gt;
+&lt;p&gt;We'll create a mapping before storing our data this time. We can specify that certain string fields are "not_analyzed" as well, meaning that rather than try to parse out the text in "D St &amp;amp; Maryland Ave NE", Elasticsearch will treat it as a single string not to be broken up:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;csv&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;elasticsearch&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Map the fields of a new &amp;quot;trip&amp;quot; doc_type&lt;/span&gt;
+&lt;span class="n"&gt;mapping&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="s2"&gt;&amp;quot;trip&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="s2"&gt;&amp;quot;properties&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;duration&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;integer&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;start_date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;start_station&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;index&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;not_analyzed&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;start_terminal&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;integer&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;end_date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;end_station&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;index&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;not_analyzed&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;end_terminal&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;integer&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;bike_id&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;subscriber&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;type&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;string&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Create a new &amp;quot;bikeshare&amp;quot; index that includes &amp;quot;trips&amp;quot; with the above mapping&lt;/span&gt;
+&lt;span class="n"&gt;es&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Elasticsearch&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indices&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;bikeshare&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indices&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;put_mapping&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;bikeshare&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;doc_type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;trip&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;mapping&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Import a CSV file of trip data - this will take quite a while!&lt;/span&gt;
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;2014-Q2-Trips-History-Data.csv&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;rb&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;csvfile&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;reader&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;csv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reader&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;csvfile&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;reader&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="c1"&gt;# Skip header row&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nb"&gt;id&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;enumerate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;reader&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;s&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;trip_seconds&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="p"&gt;[:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;60&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;60&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="p"&gt;[:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;60&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;[:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+        &lt;span class="n"&gt;content&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;duration&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;trip_seconds&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;start_date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;start_station&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;start_terminal&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;end_date&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;end_station&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;end_terminal&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;6&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;bike_id&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;7&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+            &lt;span class="s2"&gt;&amp;quot;subscriber&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="n"&gt;es&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;bikeshare&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;doc_type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;trip&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;id&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;id&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;content&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Run a couple queries to make sure data stored as expected:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;http://localhost:9200/bikeshare/trip/_search?size=3&amp;amp;pretty=true
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now let's graph some results with Kibana! A browser-based analytics dashboard built for adding visualization to Elasticsearch, Kibana is usually used for analyzing data over time (ie, tracking log events as a time series). In this case, we haven't collected timestamps, but &lt;/p&gt;
+&lt;p&gt;Start by &lt;a href="http://www.elasticsearch.org/overview/kibana/installation/"&gt;downloading Kibana&lt;/a&gt;. While Elasticsearch is still up and running, you can separately visit Kibana's directory and run:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;python -m SimpleHTTPServer 9201
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If you now visit:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;http://localhost:9201/
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;you should be able to see Kibana's default interface. Click "Blank Dashboard" at the bottom to get started, or let Kibana fill in some default panels. Add a row of query results using a "table" panel and try searching for &lt;code&gt;subscriber:registered&lt;/code&gt; at the top instead of the default &lt;code&gt;*&lt;/code&gt; to see the results limit. (To add a panel to a new row, click the green "+" on the far left.)&lt;/p&gt;
+&lt;p&gt;Let's see the proportion of registered users in a chart. Add a new row to the dashboard, then add a &lt;strong&gt;terms&lt;/strong&gt; type panel to that row. Give it a title "Subscriber types" and take the &lt;strong&gt;count&lt;/strong&gt; of the &lt;strong&gt;field&lt;/strong&gt; "subscribers" for a &lt;em&gt;style&lt;/em&gt;* of "bar" or "pie". This should create a chart of the registered versus casual bikeshare users:
+&lt;center&gt;&lt;img alt="ElasticSearch Chart 1" src="/images/ESchart1.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;Try taking a look at the distribution of top ending stations, &lt;code&gt;end_station&lt;/code&gt;, in a similar way:
+&lt;center&gt;&lt;img alt="ElasticSearch Chart 2" src="/images/ESchart2.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;p&gt;Now we can run search queries and get real-time updates on these charts; try searching for &lt;code&gt;start_station:"Lincoln Memorial"&lt;/code&gt; to see where riders end their journey when they start at the Lincoln Memorial.&lt;/p&gt;
+&lt;p&gt;Next steps: examine results across time, analyze the total duration of trips, add geocoding and map the results, find the bikes that have traveled the farthest total distance... Even if you aren't attending the meetup, please let us know if you try out any interesting side projects using Elasticsearch - bonus points if you include an open-source repo that we could share here!&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Fletcher Heisler</dc:creator><pubDate>Mon, 20 Oct 2014 00:00:00 +0200</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2014-10-20:blog/first-monthly-challenge-elasticsearch/</guid><category>elasticsearch</category></item><item><title>Using Hub and Fish to Turn GitHub Issues into Pull Requests</title><link>http://engineroom.trackmaven.com/blog/using-hub-and-fish-to-turn-github-issues-into-pull-requests/</link><description>&lt;h2&gt;Or: How I Learned to Stop Worrying and Love ZenHub&lt;/h2&gt;
+&lt;p&gt;Lately we've been making use of &lt;a href="https://www.zenhub.io/"&gt;ZenHub&lt;/a&gt; here at TrackMaven for tracking our engineering tasks as GitHub issues move from the backlog into our current cycle, become WIP, enter QC and eventually get merged in. Although ZenHub has certainly had its growing pains (they're still in open beta), it's been great to get GitHub issues organized in one place.&lt;/p&gt;
+&lt;p&gt;One issue we've had in tracking our GitHub work, however, has been the inherent duplication between issues and pull requests. ZenHub, &lt;a href="https://huboard.com/"&gt;HuBoard&lt;/a&gt; and other tools have no ability to filter to &lt;em&gt;only&lt;/em&gt; issues or &lt;em&gt;only&lt;/em&gt; pull requests - and in fact, most of the time we wouldn't want to do so, since individual issues sometimes lead to multiple separate pull requests needed to tackle them.&lt;/p&gt;
+&lt;p&gt;What we really needed was a way to &lt;em&gt;turn issues into pull requests&lt;/em&gt; on demand, thus avoiding a lot of potential for duplication, noise and confusion when pull requests didn't directly reference their respective issues, commentary got split across issue/pull request, or things fell through our process when only one item of the pair had the correct WIP/QC status in ZenHub.&lt;/p&gt;
+&lt;p&gt;Enter &lt;a href="https://github.com/github/hub"&gt;hub&lt;/a&gt;. hub, available via Homebrew or as a RubyGem, has a ton of useful features and shortcuts for turbocharging your git, but the one we use most is the &lt;code&gt;pull-request&lt;/code&gt; command. This uses the GitHub API's &lt;a href="https://developer.github.com/v3/pulls/#alternative-input"&gt;"alternative input"&lt;/a&gt; to automagically &lt;strong&gt;turn an existing issue into a pull request.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The syntax can be annoyingly verbose, though, especially if you don't have upstream tracking on your git. Simple enough if you tend to work on a single project: set up an alias! Most of us here use the &lt;a href="http://fishshell.com/"&gt;fish&lt;/a&gt; shell, where &lt;code&gt;alias&lt;/code&gt; is actually just a wrapper for &lt;a href="http://ridiculousfish.com/shell/user_doc/html/commands.html#function"&gt;function&lt;/a&gt;. The easiest way to set up a &lt;code&gt;pull-request&lt;/code&gt; shortcut would then be the following two functions:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;function&lt;/span&gt; hubpr
+        hub pull-request -b &lt;span class="o"&gt;[&lt;/span&gt;GitHubName&lt;span class="o"&gt;]&lt;/span&gt;:master -h &lt;span class="o"&gt;[&lt;/span&gt;GitHubName&lt;span class="o"&gt;]&lt;/span&gt;:&lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;1&lt;span class="o"&gt;]&lt;/span&gt; -i &lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;2&lt;span class="o"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+
+    &lt;span class="k"&gt;function&lt;/span&gt; pr
+        hubpr &lt;span class="o"&gt;(&lt;/span&gt;git rev-parse --abbrev-ref HEAD&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$argv&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You'll then need to save these functions to use them again later in other terminal sessions:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nb"&gt;funcsave &lt;/span&gt;hubpr
+    &lt;span class="nb"&gt;funcsave &lt;/span&gt;pr
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;(You can also use &lt;code&gt;funced&lt;/code&gt; to edit the function corresponding to the passed-in name interactively if you need to make changes.)&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;pr&lt;/code&gt; function above will return the current git branch name, which gets passed into the &lt;code&gt;hubpr&lt;/code&gt; function as the first argument. &lt;code&gt;hubpr&lt;/code&gt; then sets the base and head branches based on the GitHub organization or username you've entered. You could of course replace &lt;code&gt;master&lt;/code&gt; with &lt;code&gt;staging&lt;/code&gt; or, depending on your workflow, include a separate argument to specify for determining the base branch, although this starts to undo some of the point of creating a shortcut.&lt;/p&gt;
+&lt;p&gt;The second argument, the actual issue number, is supplied when actually using the function; for instance, to make a pull request out of the newly pushed current branch &lt;code&gt;fix-everything&lt;/code&gt; that will close out issue number 123, you can now do:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pr 123
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Finally, if you want to create a pull request based off of any arbitrary branch, rather than just your current branch, this simple addition to the args should do the trick: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;function&lt;/span&gt; hubpr
+    hub pull-request -b &lt;span class="o"&gt;[&lt;/span&gt;GitHubName&lt;span class="o"&gt;]&lt;/span&gt;:&lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;3&lt;span class="o"&gt;]&lt;/span&gt; -h &lt;span class="o"&gt;[&lt;/span&gt;GitHubName&lt;span class="o"&gt;]&lt;/span&gt;:&lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;1&lt;span class="o"&gt;]&lt;/span&gt; -i &lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;2&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="k"&gt;function&lt;/span&gt; pr
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="k"&gt;set&lt;/span&gt; -q argv&lt;span class="o"&gt;[&lt;/span&gt;2&lt;span class="o"&gt;]&lt;/span&gt;
+       hubpr &lt;span class="o"&gt;(&lt;/span&gt;git rev-parse --abbrev-ref HEAD&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;1&lt;span class="o"&gt;]&lt;/span&gt; &lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;2&lt;span class="o"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt;
+       hubpr &lt;span class="o"&gt;(&lt;/span&gt;git rev-parse --abbrev-ref HEAD&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;$argv&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;1&lt;span class="o"&gt;]&lt;/span&gt; master
+    &lt;span class="k"&gt;end&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;That's it! No more unnecessary issue/pull request duplication.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Fletcher Heisler</dc:creator><pubDate>Sat, 27 Sep 2014 00:00:00 +0200</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2014-09-27:blog/using-hub-and-fish-to-turn-github-issues-into-pull-requests/</guid><category>Github</category><category>Hub</category><category>Zenhub</category><category>Fish</category></item></channel></rss>

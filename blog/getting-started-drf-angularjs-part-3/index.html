@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Getting Started with Django REST Framework (DRF) and AngularJS (Part 3) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Getting Started with Django REST Framework (DRF) and AngularJS (Part 3)</h2>
+  <p class="blog-post-meta single">Posted on <strong>May 05, 2016</strong> by <a href="http://engineroom.trackmaven.com/author/tim-butler/">Tim Butler</a><br>Category: <a href="/category/development/">Development</a> | <a href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-3/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p><strong>Read: <a href="/blog/getting-started-drf-angularjs-part-1/">Part 1 - Initial Project Setup</a></strong> and <a href="/blog/getting-started-drf-angularjs-part-2/">Part 2 - Django Models and the ORM</a></p>
+<p><strong>Write: <a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-3">Part 3 Supplementary Code</a></strong></p>
+<p>This is the third installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF in the server and AngularJS in the client.</p>
+<p>This post focuses on the basics of Django REST Framework (DRF), with topics covering</p>
+<ul>
+<li><a href="#about">A Recap and Introduction</a></li>
+<li><a href="#serializers">Serializers</a></li>
+<li><a href="#views">Views</a></li>
+<li><a href="#routing">URL Routing</a></li>
+<li><a href="#api">Using the API</a></li>
+</ul>
+<p>This guide uses Django <code>1.8.5</code> and Django Rest Framework <code>3.3.0</code>.  The base directory for our project is named <code>drf-sample</code>.</p>
+<p><a name="about"></a></p>
+<h2>A Recap and Introduction</h2>
+<p>Last we met, we setup a <code>Retail</code> module, created models for the module, setup the module database, and explored the ORM to create an initial set of objects in the database.  While it's great to have our database setup, we don't have a way to access the data from outside of our application. </p>
+<p>Our project goal is to create a client application that is deployed separately from the server application.  For this to work, we need to define an API on the server for the client to interact with.  Django REST Framework (DRF) provides us with the tools to make the API.  </p>
+<p><em>At a high level, we can think of our server application as a house.  Django is the house itself and all the various furniture inside the house.  Normally, only those inside the house are able to see how the house is furnished.  However, DRF provides a windows and doors for the house.  With DRF, outsiders can look inside the house and add or remove furniture.</em></p>
+<p>While DRF can become quite extensive, this post will focus on the basics in terms of a single goal: expose our Django models to external services via an API.  We need to define three things:</p>
+<ul>
+<li><code>Serializers</code> to specify how the database objects are formatted when accessed from the API</li>
+<li><code>Views</code> to specify which operations can be performed on models through the API</li>
+<li><code>Routes</code> to specify the URLs to access each of the database models through the API</li>
+</ul>
+<p>By the end of this post, we will be able to send API requests to the <code>Retail</code> application and retrieve our previously created data objects.  </p>
+<p><a name="serializers"></a></p>
+<h2>Defining Serializers</h2>
+<p>A serializer translates objects into different formats.  From the <a href="http://www.django-rest-framework.org/api-guide/serializers/">DRF serializer documentation</a>: </p>
+<blockquote>
+<p>Serializers allow complex data such as querysets and model instances to be converted to native Python datatypes that can then be easily rendered into JSON, XML or other content types. Serializers also provide deserialization, allowing parsed data to be converted back into complex types, after first validating the incoming data.</p>
+</blockquote>
+<p>Imagine the <code>Store</code> model.  It contains the <code>opening_date</code> field, a <code>DateTimeField</code>.  In the underlying database the field is stored in a database date field depending on the database chosen, but that format may not always be human-readible.  Instead, when a user views a date they want an ISO formatted date string in the vein of <code>2014-12-04T20:55:17Z</code>.  Serializers aid in this translation.</p>
+<p>We need a serializer for each of our three models: <code>Chain</code>, <code>Store</code>, and <code>Employee</code>.  Add the <code>server/retail/serializers.py</code> file to the project.  </p>
+<div class="highlight"><pre><span></span>drf_sample/
+├── client
+└── server
+    ├── config
+    ├── manage.py
+    └── retail
+        ├── __init__.py
+        ├── migrations
+        ├── models.py
+        ├── serializers.py
+        └── views.py
+</pre></div>
+
+
+<p>Add the following code to <code>serializers.py</code>.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rest_framework</span> <span class="kn">import</span> <span class="n">serializers</span>
+<span class="kn">from</span> <span class="nn">retail.models</span> <span class="kn">import</span> <span class="n">Chain</span><span class="p">,</span> <span class="n">Store</span><span class="p">,</span> <span class="n">Employee</span>
+
+
+<span class="k">class</span> <span class="nc">ChainSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">ModelSerializer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Serializer to represent the Chain model &quot;&quot;&quot;</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Chain</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;slogan&quot;</span><span class="p">,</span> <span class="s2">&quot;founded_date&quot;</span><span class="p">,</span> <span class="s2">&quot;website&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">StoreSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">ModelSerializer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Serializer to represent the Store model &quot;&quot;&quot;</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Store</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;chain&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;address&quot;</span><span class="p">,</span> <span class="s2">&quot;opening_date&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;business_hours_start&quot;</span><span class="p">,</span> <span class="s2">&quot;business_hours_end&quot;</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">EmployeeSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">ModelSerializer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Serializer to represent the Employee model &quot;&quot;&quot;</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Employee</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;store&quot;</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;first_name&quot;</span><span class="p">,</span> <span class="s2">&quot;last_name&quot;</span><span class="p">,</span> <span class="s2">&quot;hired_date&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>The above code defines three <code>ModelSerializers</code>, a class associated directly with an existing Django model.  The <code>ModelSerializer</code> <code>Meta</code> class allows us to specify the model we wish to associate with the serializer and the model fields the serializer may access.</p>
+<p>For our server, we will be utilizing these serializers through API <code>views</code>, defined later, and no further work is needed.  DRF recognizes the field types from the associated models and is can translate our models into dictionaries.  </p>
+<p>Serializers can be used in contexts outside of views.  To provide a better perspective into how a serializer transforms an object, let's use the shell to serialize a model object.</p>
+<div class="highlight"><pre><span></span><span class="n">drf</span><span class="o">-</span><span class="n">sample</span><span class="err">$</span> <span class="n">python</span> <span class="n">server</span><span class="o">/</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">shell</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">retail.models</span> <span class="kn">import</span> <span class="n">Chain</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">retail.serializers</span> <span class="kn">import</span> <span class="n">ChainSerializer</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">chain</span> <span class="o">=</span> <span class="n">Chain</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">serializer</span> <span class="o">=</span> <span class="n">ChainSerializer</span><span class="p">(</span><span class="n">chain</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">serializer</span><span class="o">.</span><span class="n">data</span>
+<span class="p">{</span><span class="s1">&#39;website&#39;</span><span class="p">:</span> <span class="s1">u&#39;http://www.thecafeamazing.com&#39;</span><span class="p">,</span> <span class="s1">&#39;founded_date&#39;</span><span class="p">:</span> <span class="s1">u&#39;2014-12-04T20:55:17Z&#39;</span><span class="p">,</span> <span class="s1">&#39;slogan&#39;</span><span class="p">:</span> <span class="s1">u&#39;The best cafe in the USA!&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">u&#39;Cafe Amazing&#39;</span><span class="p">,</span> <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">u&#39;Founded to serve the best sandwiches.&#39;</span><span class="p">}</span>
+</pre></div>
+
+
+<p>Once we instantiate a serializer with a model object (in this case a <code>Chain</code> object), the <code>data</code> attribute of the serializer contains a dictionary version of the object.  Extending the above example, we can modify the dictionary and update the database object.</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;&gt;&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">data</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;slogan&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;The best cafe in the Mississippi!&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">serializer</span> <span class="o">=</span> <span class="n">ChainSerializer</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">serializer</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span>
+<span class="bp">True</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">new_chain</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">new_chain</span><span class="o">.</span><span class="n">slogan</span>
+<span class="s1">u&#39;The best cafe in the Mississippi!&#39;</span>
+</pre></div>
+
+
+<p>We instantiated the serializer with an existing object and the new dictionary representation of the object.  <code>is_valid</code> determines whether or not the data dictionary can be correctly formatted into the database fields for the model.  If it can, we can perform a <code>save</code> to update the model object based the new data.</p>
+<p><strong>Note:  The <code>is_valid</code> check must be performed before a <code>save</code> can be executed.</strong></p>
+<p>For the purposes of this post, all of these functions will be performed by interactions between our <code>serializers</code> and our <code>views</code>.  We are not responsible for explicitly serializing objects.  Phew!</p>
+<p><a name="views"></a></p>
+<h2>Defining Views</h2>
+<p>We need to define how our application can be interacted with through our API. Whether it be a query to a single model object or adding a new object, views define these interactions.</p>
+<p>A view controls all operations an external entity may perform on our model objects through the API.  These operations are usually referred to as <code>CRUD</code> operations corresponding to</p>
+<ul>
+<li><code>Create</code>: Add a new, distinct object to the database</li>
+<li><code>Retrieve</code>: Query a list of objects or a single object from the database</li>
+<li><code>Update</code>: Edit an existing object in the database</li>
+<li><code>Delete</code>: Remove an existing object from the database</li>
+</ul>
+<p>Views also provide other functions, including, but not limited to</p>
+<ul>
+<li>Authentication: identifies the credentials that a request is made with</li>
+<li>Permissioning: determines if a request is allowed</li>
+<li>Filtering: filters object results based on specified parameters</li>
+</ul>
+<p>The advanced functions of a view will be covered in later posts.</p>
+<p>To start working on our <code>Retail</code> views, add the <code>server/retail/views.py</code> file to the project.</p>
+<div class="highlight"><pre><span></span>drf_sample/
+├── client
+└── server
+    ├── config
+    ├── manage.py
+    └── retail
+        ├── __init__.py
+        ├── migrations
+        ├── models.py
+        ├── serializers.py
+        └── views.py
+</pre></div>
+
+
+<p>Add the following code to <code>views.py</code>.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rest_framework</span> <span class="kn">import</span> <span class="n">viewsets</span>
+<span class="kn">from</span> <span class="nn">retail.models</span> <span class="kn">import</span> <span class="n">Chain</span><span class="p">,</span> <span class="n">Store</span><span class="p">,</span> <span class="n">Employee</span>
+<span class="kn">from</span> <span class="nn">retail.serializers</span> <span class="kn">import</span> <span class="n">ChainSerializer</span><span class="p">,</span> <span class="n">StoreSerializer</span><span class="p">,</span><span class="n">EmployeeSerializer</span>
+
+
+<span class="k">class</span> <span class="nc">ChainViewSet</span><span class="p">(</span><span class="n">viewsets</span><span class="o">.</span><span class="n">ModelViewSet</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; ViewSet for viewing and editing Chain objects &quot;&quot;&quot;</span>
+    <span class="n">queryset</span> <span class="o">=</span> <span class="n">Chain</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">serializer_class</span> <span class="o">=</span> <span class="n">ChainSerializer</span>
+
+
+<span class="k">class</span> <span class="nc">StoreViewSet</span><span class="p">(</span><span class="n">viewsets</span><span class="o">.</span><span class="n">ModelViewSet</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; ViewSet for viewing and editing Store objects &quot;&quot;&quot;</span>
+    <span class="n">queryset</span> <span class="o">=</span> <span class="n">Store</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">serializer_class</span> <span class="o">=</span> <span class="n">StoreSerializer</span>
+
+
+<span class="k">class</span> <span class="nc">EmployeeViewSet</span><span class="p">(</span><span class="n">viewsets</span><span class="o">.</span><span class="n">ModelViewSet</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; ViewSet for viewing and editing Employee objects &quot;&quot;&quot;</span>
+    <span class="n">queryset</span> <span class="o">=</span> <span class="n">Employee</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">serializer_class</span> <span class="o">=</span> <span class="n">EmployeeSerializer</span>
+</pre></div>
+
+
+<p>The above code defines three <code>ModelViewSets</code>, a class that comes pre-packaged with all <code>CRUD</code> operations and connects directly to an existing model.  The <code>queryset</code> attribute specifies a very basic query that acts as the base set of objects the view has access to.  Our views are allowed access to all of their model objects.  The <code>serializer_class</code> attribute specifies which serializer will be used to format individual objects within the <code>queryset</code> when requests are made.</p>
+<p>In the example above, each <code>ViewSet</code> utilizes to its like-named model types:</p>
+<ul>
+<li><code>ChainViewSet</code> uses a queryset for the <code>Chain</code> model (<code>Chain.objects.all()</code>)</li>
+<li><code>StoreViewSet</code> uses a queryset for the <code>Store</code> model (<code>Store.objects.all()</code>)</li>
+<li><code>EmployeeViewSet</code> uses a queryset for the <code>Employee</code> model (<code>Employee.objects.all()</code>)</li>
+</ul>
+<p>Likewise, each <code>ViewSet</code> utilizes to its like-named serializer:</p>
+<ul>
+<li><code>ChainViewSet</code> uses the <code>ChainSerializer</code></li>
+<li><code>StoreViewSet</code> uses the <code>StoreSerializer</code></li>
+<li><code>EmployeeViewSet</code> uses the <code>EmployeeSerializer</code></li>
+</ul>
+<p>Very simply put, the <code>ChainViewSet</code> allows all <code>CRUD</code> operations to be performed on all <code>Chain</code> objects, and so on.  </p>
+<p><a name="routing"></a></p>
+<h2>Defining URL Routes</h2>
+<p>We have the views in place to allow <code>CRUD</code> operations on our models, but we haven't defined how to access those operations through the API.  This is where routes come in.</p>
+<p>Routes define Uniform Resource Identifiers (URIs) that can be accessed through the API.  External services can interact with these URIs to communicate with our application and perform operations on our model objects.</p>
+<p>We need to define a Route for each model type.  We already have a <code>server/urls.py</code> file in our project in anticipation of our routes.  Add the following code to that file.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rest_framework.routers</span> <span class="kn">import</span> <span class="n">DefaultRouter</span>
+<span class="kn">from</span> <span class="nn">retail.views</span> <span class="kn">import</span> <span class="n">ChainViewSet</span><span class="p">,</span> <span class="n">StoreViewSet</span><span class="p">,</span> <span class="n">EmployeeViewSet</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="n">DefaultRouter</span><span class="p">()</span>
+<span class="n">router</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;chains&#39;</span><span class="p">,</span> <span class="n">viewset</span><span class="o">=</span><span class="n">ChainViewSet</span><span class="p">)</span>
+<span class="n">router</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;stores&#39;</span><span class="p">,</span> <span class="n">viewset</span><span class="o">=</span><span class="n">StoreViewSet</span><span class="p">)</span>
+<span class="n">router</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;employees&#39;</span><span class="p">,</span> <span class="n">viewset</span><span class="o">=</span><span class="n">EmployeeViewSet</span><span class="p">)</span>
+
+<span class="n">urlpatterns</span> <span class="o">=</span> <span class="n">router</span><span class="o">.</span><span class="n">urls</span>
+</pre></div>
+
+
+<p>The code above defines a DRF <code>DefaultRouter</code> and registers a URI for each of our Models along with the view that the URI provides access to.  <code>Chain</code> objects will be accessible via the <code>chains</code> URI, <code>Store</code> objects will be accessible via the <code>stores</code> URI, and <code>Employee</code> objects will be accessible through the <code>employees</code> URI.  More on how to access those in the following section.</p>
+<p><code>settings.py</code> points to the <code>urls.py</code> file (via the <code>ROOT_URLCONF</code> setting).  Django expects to find a <code>urlpatterns</code> variable here specifying all the registered URIs that can be accessed through the API, so we added all of our registered URIs to that list.  </p>
+<p><a name="api"></a></p>
+<h2>Using the API</h2>
+<p>We now have all the pieces in place to access our server database through the API.  Cool, but what does it mean and how do we do it?  Once we run the server, we can query our server database with an API request tool by appending <code>/chains/</code>, <code>/stores/</code> or <code>/employees/</code> to the base application server URL (<code>localhost:8000 by default</code>) to access our models!</p>
+<p>Let's start the application:</p>
+<div class="highlight"><pre><span></span>drf-sample$ python server/manage.py runserver
+Performing system checks...
+
+System check identified no issues (0 silenced).
+April 27, 2016 - 17:42:21
+Django version 1.8, using settings &#39;config.settings&#39;
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+</pre></div>
+
+
+<p>With the server running we can use an API request tool, such as <a href="https://curl.haxx.se/">cURL</a>, to run queries on our server database.</p>
+<div class="highlight"><pre><span></span>drf-sample$ curl -g localhost:8000/chains/
+[{&quot;name&quot;:&quot;Cafe Amazing&quot;,&quot;description&quot;:&quot;Founded to serve the best sandwiches.&quot;,&quot;slogan&quot;:&quot;The best cafe in the Mississippi!&quot;,&quot;founded_date&quot;:&quot;2014-12-04T20:55:17Z&quot;,&quot;website&quot;:&quot;http://www.thecafeamazing.com&quot;}]
+</pre></div>
+
+
+<p><em>Note: cURL usage is beyond the scope of this post, but documentation can be found around the internet.</em></p>
+<p>The result is a list of dictionaries with a single item representing our <code>Chain</code> object defined previously!</p>
+<p>Let's try querying for <code>Store</code> and <code>Employee</code> objects.</p>
+<div class="highlight"><pre><span></span>drf-sample$ curl -g localhost:8000/stores/
+[{&quot;chain&quot;:1,&quot;number&quot;:&quot;AB019&quot;,&quot;address&quot;:&quot;1234 French Quarter Terrace Columbia MD&quot;,&quot;opening_date&quot;:&quot;2015-12-04T22:55:17Z&quot;,&quot;business_hours_start&quot;:8,&quot;business_hours_end&quot;:17}]
+
+drf-sample$ curl -g localhost:8000/employees/
+[{&quot;store&quot;:1,&quot;number&quot;:&quot;026546&quot;,&quot;first_name&quot;:&quot;John&quot;,&quot;last_name&quot;:&quot;doe&quot;,&quot;hired_date&quot;:&quot;2015-12-04T00:00:00Z&quot;}]
+</pre></div>
+
+
+<p>Great, the API works!  The above commands only perform <code>GET</code> requests, but our <code>ViewSet</code> definitions are defined in a way to allow all operations for anyone accessing our server.  Permission filters can be added the <code>ViewSets</code> to allow only certain users to the server or specify only specific operations, but that will be covered in another post.</p>
+<h2>Looking Forward</h2>
+<p>We got an API up and working for the server!  The next post will cover the basics of AngularJS and how to connect the client code to the server.</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/django/">django</a>, <a href="/tag/django-rest-framework/">django rest framework</a>, <a href="/tag/angularjs/">angularjs</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image tim-butler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Tim Butler</h3>
+<p class="well-content">I'm a Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">I specialize in Python backend development through Django and Django Rest Framework. Want to get in touch? Feel free to drop me an <a href="mailto:tim.butler@trackmaven.com">email</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>
