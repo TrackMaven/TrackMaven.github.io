@@ -247,16 +247,16 @@ retail
 });
 ```
 
-First, we injected the `Chain`, `Store` and `Employee` services into the controller.  Next, we use each of those services by calling their `query` actions and using the [promises](http://andyshora.com/promises-angularjs-explained-as-cartoon.html) the actions return to populate `$scope` variables of like-names.  
+`Chain`, `Store` and `Employee` services are injected into the controller and each is used by calling the `query` action.  Using the [promises](http://andyshora.com/promises-angularjs-explained-as-cartoon.html) the actions returne, we populate `$scope` variables of like-names with the results.  
 
 In essence, the controller making three `GET` requests to three different endpoints on the local retail API and populating variables once the results of each call have returned sucessfully.  
 
-This is a very simple exmaple of how services can be used, but it's a great start for us to get API results into our client app!
+This is a very simple exmaple of how services can be used, but it's a great start to get API results into our client application!
 
 <a name="template"></a>
 ## Displaying API Results in the Template
 
-Lastly, we need to modify the retail template to make use of our shiny new controller `$scope` variables!  Add the following code to the retail template file.
+The last step before using the API results is modifying the retail template to make use of our shiny new controller `$scope` variables!  Add the following code to the retail template file.
 
 **retail.template**
 ```html
@@ -343,4 +343,6 @@ Here's what my rendered page looks like!
 
 ## Looking Forward
 
-We now have a fully functional AngularJS application.  It's simple, yes, but it lays the foundation for the rest of the application.  Next time we can start utilizing the Retail API and displaying the API results for the user! 
+This will be the last part of the Django/Angluar application for now!  The ultimate goal here was to get two separate applications up and running with Django/DRF as the backend and AngularJS running the frontend and we have accomplished that goal!
+
+There will be various, smaller posts in the future about how to improve Django and AngularJS applications in a number of ways.  Look out for those posts coming soon!
