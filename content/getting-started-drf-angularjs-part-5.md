@@ -250,7 +250,7 @@ retail
 
 In essence, the controller makes three `GET` requests to different endpoints on the local retail API and populates variables once the results of each call has returned sucessfully.  
 
-This is a very simple exmaple of how services can be used, but it's a great start to get API results into our client application!
+This is a very simple example of how services can be used, but it's a great start to get API results into our client application!
 
 <a name="template"></a>
 ## Displaying API Results in the Template
