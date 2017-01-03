@@ -6,7 +6,7 @@ Slug: getting-started-drf-angularjs-part-5
 Author: Tim Butler
 Avatar: tim-butler
 
-This is the fourth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.
+This is the fifth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.
 
 __Read Previous Posts:__ 
 
