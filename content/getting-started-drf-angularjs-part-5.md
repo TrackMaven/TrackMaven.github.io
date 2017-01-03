@@ -30,20 +30,20 @@ This post focuses on connecting our AngularJS application with the existing Djan
 * [Displaying API Results in the Template](#template)
 * [Running it All Together](#running)
 
-This guide uses [AngularJS](https://github.com/angular/angular.js) `1.5.7` and [Angular UI Router](https://github.com/angular-ui/ui-router) `0.3.1`.  Further, this guide assumes you have [Node.js](https://nodejs.org/en/) and [npm](https://www.npmjs.com/) installed on your system.
+This post uses [AngularJS](https://github.com/angular/angular.js) `1.5.7` and [Angular Resource](https://docs.angularjs.org/api/ngResource) `1.4.8`.
 
 <a name="introduction"></a>
 ## A Recap and Introduction to AngularJS Services
-In the previous post, we got out Angular application up and running in a very minimal way.  A minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend *Retail* application previously created.  This post will over the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.  
+In the previous post, we got out Angular application up and running in a very minimal way.  A minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend *Retail* application previously created.  This post covers the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.  
 
-By the end of this post we will have defined a service that contacts the *Retail* API and displays the results of the query onto our main page.
+By the end of this post we will define multiple services that contact the Retail API and display the results of the query onto our main page.
 
 <a name="resource"></a>
 ## Angular Resource (ngResource)
 
-There are many ways to contact an API through Angular.  For example, we could use [`$http`](https://docs.angularjs.org/api/ng/service/$http), but its a bit raw and is used for general purpose requests.  We want to create a RESTful web application.   The [`Angular Resource`, or `ngResource`](https://docs.angularjs.org/api/ngResource) package wraps `$http` functionality for RESTful APIs.  For this guide we will be using `ngResource` to contact our APIs.
+There are many ways to contact an API through Angular.  We could use [`$http`](https://docs.angularjs.org/api/ng/service/$http), but its a bit raw and is used for general purpose requests.  For this application we use [`Angular Resource`, or `ngResource`](https://docs.angularjs.org/api/ngResource).  `ngResource` is an AngularJS package that wraps `$http` functionality for RESTful APIs.  
 
-To use `ngResource` we need add it as a dependency for the AngularJS application.  Change the `bower.json` dependencies to contain `angular-resource` and add a resolutions section (this will eliminate potential Angular version conflicts).
+To begin, add `ngResource` as a dependency for the AngularJS application.  Change the `bower.json` dependencies to contain `angular-resource` and add a resolutions section (this eliminates potential Angular version conflicts).
 
 ```
 ...
@@ -66,21 +66,18 @@ drf-sample$ cd server
 drf-sample/client$ bower install --config.interactive=false --allow-root
 ```
 
-If all goes well then `angular-resource` will be installed into the `bower_components` directory.  Great!  It's installed, but the application is still unable to use it.  Next, we need to import it for our application add `ngResource` as a dependency for our application module.  
+`angular-resource` is installed into the `bower_components` directory.  Great!  `ngResource` is installed, but the application is unable to use it until we import it for our application.  
 
-Add `angular-resource.min.js` as a dependency in `index.html`.
+Add `angular-resource.min.js` as a dependency in the `head` section of `index.html`
 
 *index.html*
 ```html
 ...
-        <!--  Angular Setup -->
-        <script src="bower_components/angular/angular.js"></script>
-        <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
-        <script src="bower_components/angular-resource/angular-resource.min.js"></script>
+<script src="bower_components/angular-resource/angular-resource.min.js"></script>
 ...
 ```
 
-Add `ngResource` as a dependency in `public/app.js`.
+and import `ngResource` as a dependency in `public/app.js`.
 
 *public/app.js*
 ```javascript
@@ -96,12 +93,14 @@ angular
     ]);
 ```
 
-Start up the application, head to `localhost:8081`, and check the development console.  If there are no errors then you're ready to move to the next step!
+Start the angular application, navigate a browser to `localhost:8081`, and check the development console.  
 
 ```shell
 drf-sample/client$ node server.js
 Use port 8081 to connect to this server
 ```
+
+If there are no errors then you're ready to move to the next step!
 
 <a name="services"></a>
 ## Retail Services
@@ -116,11 +115,11 @@ According to the [AngularJS documentation on services](https://docs.angularjs.or
 
 > Singletons – Each component dependent on a service gets a reference to the single instance generated by the service factory.
 
-Long story short, services are individual modules of code that can be imported by other services, controllers, etc.  
+Long story short, services are individual modules of code that can be imported by other services, controllers, etc. to perform work.  
 
-For this application we're going to create three AngularJS services with the intended purpose to provide a way to query the Retail API.  Each service will focus on a specific API endpoint (`chains`, `stores`, and `employees`).
+We're going to create three AngularJS services with the goal to provide a way to query the Retail API endpoints.  Each service focuses on a specific API endpoint (`chains`, `stores`, and `employees`).
 
-Let's start by adding three service files to the services directory.
+Start by adding three service files to the services directory
 
 ```shell
 components/
@@ -133,7 +132,7 @@ components/
     └── templates/
 ```
 
-Add the following lines to each file.
+and add the following to each specified file.
 
 *chain.service.js*
 ```javascript
@@ -204,7 +203,7 @@ retail
     });
 ```
 
-Then import the file into `index.html` `head` section so they can be used by the application.
+Then import each service file into the `head` section of `index.html` so they can be used by the application.
 
 ```html
 ...
@@ -214,20 +213,20 @@ Then import the file into `index.html` `head` section so they can be used by the
 ...
 ```
 
-Great, our three services have been defined and imported!  What do they do?  First, each service is defined as a `factory`.  An AngularJS `factory` typically defines one or more objects and returns those objects for direct use by the calling party.  In each of our factories, we are instantiating a `$resource` object and returning it directly.  Any module that injects our factories will have access to a pre-configured `$resource` object through the `factory`.
+Our three services have been defined and imported!  What do they do?  First, each service is defined as a `factory`.  An AngularJS `factory` typically defines one or more objects and returns those objects for direct use by the calling party.  We are instantiating a `$resource` object in each of our `factory` services returning it directly.  Any module that uses the services have access to a pre-configured `$resource` object.
 
-Each `$resource` object is defined with a set of [configurations](https://docs.angularjs.org/api/ngResource/service/$resource) explaining how to access our API endpoints.  For each, we are expecting the Django endpoint to live on `localhost:8000` and to be identified by either `/chains/`, `/stores/` or `/employees/`.  The extra `:id` parameter denotes that we can specify a resource ID and the ID will be plugged into the URI.
+Each `$resource` object is defined with a set of [configurations](https://docs.angularjs.org/api/ngResource/service/$resource) explaining how to access the API endpoints.  For each, we are expecting the Django endpoint to live on `localhost:8000` and to be identified by either `/chains/`, `/stores/` or `/employees/`.  The extra `:id` parameter denotes that we can specify a resource ID and the ID will be plugged into the URI.
 
-Next, we specify a `query` action.  This action peforms a `GET` request to the specified endpoint, expects an array in return, and ensures that the result is JSON.  
+Next, we specify a `query` action.  This action allows `GET` requests to be performed on the specified endpoint, expects an array in return, and ensures that the result is JSON.  
 
-Finally, our Django application expects trailing slashes at the end of our requests so we ensure that those trailing slashes are not stripped.  
+Lastly, our Django application expects trailing slashes at the end of API requests so we ensure that those trailing slashes are not stripped.  
 
-Our services are now ready to be used by another module.  The first module to make use of these services is the retail controller.
+Our services are ready to be used by another module.  The first module to make use of these services is the retail controller.
 
 <a name="using-services"></a>
 ## Making Use of the Retail Services
 
-The retail controller in the previous post was a very basic skeleton of what a controller can be.  While it is good to keep controllers light and move any heavy lifting to services, the original controller didn't serve much purpose.  Now that we have services defined, however, we can inject the services into the controller module to dynamically populate datasets based on the results of various API calls.
+The retail controller in the previous post was a very basic skeleton of what a controller can be.  It is good to keep controllers light and move any heavy lifting to services, but the original controller didn't serve much purpose.  Now that we have services defined we can inject them into the controller to dynamically populate variables based on the results of various API calls.
 
 Open the retail controller and add the following code to the file.
 
@@ -247,16 +246,16 @@ retail
 });
 ```
 
-`Chain`, `Store` and `Employee` services are injected into the controller and each is used by calling the `query` action.  Using the [promises](http://andyshora.com/promises-angularjs-explained-as-cartoon.html) the actions returne, we populate `$scope` variables of like-names with the results.  
+`Chain`, `Store` and `Employee` services are injected into the controller. Each is used by calling the `query` action when the controller is instantiated.  Using the [promises](http://andyshora.com/promises-angularjs-explained-as-cartoon.html) the actions return, we populate `$scope` variables of like-names with the results.  
 
-In essence, the controller making three `GET` requests to three different endpoints on the local retail API and populating variables once the results of each call have returned sucessfully.  
+In essence, the controller makes three `GET` requests to different endpoints on the local retail API and populates variables once the results of each call has returned sucessfully.  
 
 This is a very simple exmaple of how services can be used, but it's a great start to get API results into our client application!
 
 <a name="template"></a>
 ## Displaying API Results in the Template
 
-The last step before using the API results is modifying the retail template to make use of our shiny new controller `$scope` variables!  Add the following code to the retail template file.
+The last step to display API results on a page is to modify the template to make use of the new controller variables.  Add the following code to the retail template file.
 
 **retail.template**
 ```html
@@ -302,11 +301,25 @@ The last step before using the API results is modifying the retail template to m
 </div>
 ```
 
-This example is a bit more complex than the previous post, so let's go into what's happening here. 
+This example is a bit more complex than the previous post, so let's go into what's happening here.  At a high level, AngularJS `ng-repeat` is used to iterate through the lists defined in the controller to display data for each item within the lists.
 
-[ng-repeat](https://docs.angularjs.org/api/ng/directive/ngRepeat) is a great AngularJS directive used to loop over collections and generate dynamic content within the looped elements.  Think of these as a Python `for` loop in syntax whereas the current element of the loop is defined as a subset of a collection.  In this case, we are looping other three lists - `chains`, `stores`, and `employees`.  These lists were defined within the retail controller from the previous section whereas each contains a list of results from their respective API call.  
+[ng-repeat](https://docs.angularjs.org/api/ng/directive/ngRepeat) is a great AngularJS directive used to loop over collections and generate dynamic content based on each item within the collections.  Think of these as a Python `for` loop in syntax where the current element of the loop is defined as a subset of a collection.  
 
-When rendered, each list item will be displayed as a separate element `div` element.  Within the looped `div`, we are using the current item variable (`chain`, `store`, and `employee`) defined within the `ng-repeat` to interact with the data.  In this simple example the template will display the noteworthy fields of each object.
+While python uses 
+
+```python
+for item in itemset:
+```
+
+the AngularJS `ng-repeat` syntax would be
+
+```javascript
+ng-repeat="item in itemset"
+```
+
+In this case, we are looping other three lists - `chains`, `stores`, and `employees`.  These lists were defined within the retail controller from the previous section whereas each contains a list of results from their respective API call.  
+
+When rendered, each item is be displayed as a separate element `div` element.  Within the repeated `div`, we use the current item variable (`chain`, `store`, and `employee`) from the `ng-repeat` to interact with the data.  In this simple example the template displays the noteworthy fields of each object.
 
 Everything is ready to go to start displaying the data!
 
@@ -335,8 +348,7 @@ Use port 8081 to connect to this server
 
 Great!  Both applications are up and running.  Open a browser and head to `localhost:8081`.  Assuming you haven't cleared the Django database from [Part 2](/blog/getting-started-drf-angularjs-part-2/) you should see some data populated on the page!  If you did clear the database then you will have to populate your models through the ORM.  
 
-Here's what my rendered page looks like!
-
+Here's what the rendered page looks like!
 
 <center>![map3](/images/drf-rendered.png)</center>
 
