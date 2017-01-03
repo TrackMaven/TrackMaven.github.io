@@ -1,5 +1,5 @@
 Title: Getting Started with Django REST Framework (DRF) and AngularJS (Part 5)
-Date: 2016-12-30
+Date: 2017-01-03
 Category: Development
 Tags: django, django rest framework, angularjs
 Slug: getting-started-drf-angularjs-part-5
