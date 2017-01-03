@@ -355,6 +355,6 @@ Here's what the rendered page looks like!
 
 ## Looking Forward
 
-This will be the last part of the Django/Angluar application for now!  The ultimate goal here was to get two separate applications up and running with Django/DRF as the backend and AngularJS running the frontend and we have accomplished that goal!
+This will be the last part of the Django/Angular application for now!  The ultimate goal here was to get two separate applications up and running with Django/DRF as the backend and AngularJS running the frontend and we have accomplished that goal!
 
 There will be various, smaller posts in the future about how to improve Django and AngularJS applications in a number of ways.  Look out for those posts coming soon!
