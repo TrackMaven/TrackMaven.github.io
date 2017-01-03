@@ -34,14 +34,14 @@ This post uses [AngularJS](https://github.com/angular/angular.js) `1.5.7` and [A
 
 <a name="introduction"></a>
 ## A Recap and Introduction to AngularJS Services
-In the previous post, we got out Angular application up and running in a very minimal way.  A minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend *Retail* application previously created.  This post covers the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.  
+In the previous post, we got out Angular application up and running in a very minimal way.  A minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend *Retail* application previously created.  This post covers the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.
 
 By the end of this post we will define multiple services that contact the Retail API and display the results of the query onto our main page.
 
 <a name="resource"></a>
 ## Angular Resource (ngResource)
 
-There are many ways to contact an API through Angular.  We could use [`$http`](https://docs.angularjs.org/api/ng/service/$http), but its a bit raw and is used for general purpose requests.  For this application we use [`Angular Resource`, or `ngResource`](https://docs.angularjs.org/api/ngResource).  `ngResource` is an AngularJS package that wraps `$http` functionality for RESTful APIs.  
+There are many ways to contact an API through Angular.  We could use [`$http`](https://docs.angularjs.org/api/ng/service/$http), but it's a bit raw and is used for general purpose requests.  For this application we use [`Angular Resource`](https://docs.angularjs.org/api/ngResource), or [`ngResource`](https://docs.angularjs.org/api/ngResource).  `ngResource` is an AngularJS package that wraps `$http` functionality for RESTful APIs.
 
 To begin, add `ngResource` as a dependency for the AngularJS application.  Change the `bower.json` dependencies to contain `angular-resource` and add a resolutions section (this eliminates potential Angular version conflicts).
 
