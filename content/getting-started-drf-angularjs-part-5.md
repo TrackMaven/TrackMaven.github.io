@@ -34,7 +34,7 @@ This post uses [AngularJS](https://github.com/angular/angular.js) `1.5.7` and [A
 
 <a name="introduction"></a>
 ## A Recap and Introduction to AngularJS Services
-In the previous post, we got out Angular application up and running in a very minimal way.  A minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend *Retail* application previously created.  This post covers the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.
+In the previous post, we got our Angular application up and running in a very minimal way.  As minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend *Retail* application previously created.  This post covers the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.
 
 By the end of this post we will define multiple services that contact the Retail API and display the results of the query onto our main page.
 
@@ -319,14 +319,14 @@ ng-repeat="item in itemset"
 
 In this case, we are looping other three lists - `chains`, `stores`, and `employees`.  These lists were defined within the retail controller from the previous section whereas each contains a list of results from their respective API call.  
 
-When rendered, each item is be displayed as a separate element `div` element.  Within the repeated `div`, we use the current item variable (`chain`, `store`, and `employee`) from the `ng-repeat` to interact with the data.  In this simple example the template displays the noteworthy fields of each object.
+When rendered, each item is be displayed as a separate `div` element.  Within the repeated `div`, we use the current item variable (`chain`, `store`, and `employee`) from the `ng-repeat` to interact with the data.  In this simple example the template displays the noteworthy fields of each object.
 
 Everything is ready to go to start displaying the data!
 
 <a name="running"></a>
 ## Running it All Together
 
-Let's get the total application up and running!  Keep in mind that the intention of this guide is to run the Django application and the AngularJS application as two separate services.  To run everything together we need to run two different commands to start both sides:
+Let's get the total application up and running!  Keep in mind that the intent of this guide is to run the Django application and the AngularJS application as two separate services.  To run everything together we need to run two different commands to start both sides:
 
 **Start Django application**
 ```shell
