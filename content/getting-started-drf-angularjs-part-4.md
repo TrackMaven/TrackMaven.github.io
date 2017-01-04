@@ -75,13 +75,12 @@ To setup the project, we need to define and install our project dependencies.  F
   "name": "drf-sample-client",
   "description": "A sample Angular application",
   "dependencies": {
-    "express": "^4.13.4",
-    "bower": "1.7.9"
+    "express": "^4.13.4"
   }
 }
 ```
 
-*Note:* There are a number of fields possible in `package.json` left out of this example.  The [package.json documentation](https://docs.npmjs.com/files/package.json) does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download `express` and `bower`.
+*Note:* There are a number of fields possible in `package.json` left out of this example.  The [package.json documentation](https://docs.npmjs.com/files/package.json) does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download `express`.
 
 ----
 
@@ -90,9 +89,10 @@ Since we already have `npm` installed, we can install all of our project depende
 ```shell
 client$ cd client/
 drf-sample/client$ npm install
+drf-sample/client$ npm install -g bower
 ```
 
-`node_modules` is created within the client directory and contains the contents of both installed packages.  Now that we have [bower](https://bower.io/) downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in `bower.json`.
+`node_modules` is created within the client directory and contains the contents of the installed `express` package.  Now that we have [bower](https://bower.io/) downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in `bower.json`.
 
 ----
 
