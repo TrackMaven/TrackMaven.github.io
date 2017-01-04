@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Maven">
+    <link rel="icon" href="https://s3.amazonaws.com/awstrackmaven/img/favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://engineroom.trackmaven.com/feeds/rss.xml">
+
+    <title>
+Getting Started with Django REST Framework (DRF) and AngularJS (Part 5) - The Engine Room - TrackMaven
+    </title>
+    <script type="text/javascript">
+      (function(d) {
+        var config = {
+          kitId: 'mgb7pvk',
+          scriptTimeout: 3000
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='//use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+      })(document);
+    </script>
+    <script src="//use.typekit.net/mgb7pvk.js"></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-548862822413d8b2" async="async"></script>
+
+    <link href="http://engineroom.trackmaven.com/theme/css/github.css" rel="stylesheet">
+    <link href="http://engineroom.trackmaven.com/theme/css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="blog-masthead">
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-6">
+              <a href="http://engineroom.trackmaven.com/"><img class="logo" src="http://engineroom.trackmaven.com/theme/images/logo@2x.png"/ ></a>
+              <h1 class="blog-title">
+                <a href="http://engineroom.trackmaven.com/">The Engine Room</a>
+              </h1>
+            </div>
+            <div class="col-md-6 mobile-placement">
+              <a class="ribbon float-right" href="https://boards.greenhouse.io/trackmaven/jobs/41377">We're Hiring!</a>
+            </div>
+          </div>
+        </div>
+      </div>
+       <div class="container">
+<div class="blog-post single">
+  <h2 class="blog-post-title centered">Getting Started with Django REST Framework (DRF) and AngularJS (Part 5)</h2>
+  <p class="blog-post-meta single">Posted on <strong>January 04, 2017</strong> by <a href="http://engineroom.trackmaven.com/author/tim-butler/">Tim Butler</a><br>Category: <a href="/category/development/">Development</a> | <a href="http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-5/#disqus_thread"></a></p>
+  <div class="blog-post-content">
+    <p>This is the fifth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.</p>
+<p><strong>Read Previous Posts:</strong> </p>
+<ul>
+<li><a href="/blog/getting-started-drf-angularjs-part-1/">Part 1 - Initial Project Setup</a></li>
+<li><a href="/blog/getting-started-drf-angularjs-part-2/">Part 2 - Django Models and the ORM</a></li>
+<li><a href="/blog/getting-started-drf-angularjs-part-3/">Part 3 - Serializers, views, and API routes</a></li>
+<li><a href="/blog/getting-started-drf-angularjs-part-4/">Part 4 - Client Project Setup</a></li>
+</ul>
+<p><strong>Write:</strong></p>
+<ul>
+<li><a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-5">Part 5 Supplementary Code</a></li>
+</ul>
+<hr />
+<p>This post focuses on connecting our AngularJS application with the existing Django Retail application backend.</p>
+<ul>
+<li><a href="#introduction">A Recap and Introduction to AngularJS Services</a></li>
+<li><a href="#resource">Angular Resource</a></li>
+<li><a href="#services">Retail Services</a></li>
+<li><a href="#using-services">Making Use of the Retail Services</a></li>
+<li><a href="#template">Displaying API Results in the Template</a></li>
+<li><a href="#running">Running it All Together</a></li>
+</ul>
+<p>This post uses <a href="https://github.com/angular/angular.js">AngularJS</a> <code>1.5.7</code> and <a href="https://docs.angularjs.org/api/ngResource">Angular Resource</a> <code>1.4.8</code>.</p>
+<p><a name="introduction"></a></p>
+<h2>A Recap and Introduction to AngularJS Services</h2>
+<p>In the previous post, we got our Angular application up and running in a very minimal way.  As minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend <em>Retail</em> application previously created.  This post covers the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.</p>
+<p>By the end of this post we will define multiple services that contact the Retail API and display the results of the query onto our main page.</p>
+<p><a name="resource"></a></p>
+<h2>Angular Resource (ngResource)</h2>
+<p>There are many ways to contact an API through Angular.  We could use <a href="https://docs.angularjs.org/api/ng/service/$http"><code>$http</code></a>, but it's a bit raw and is used for general purpose requests.  For this application we use <a href="https://docs.angularjs.org/api/ngResource"><code>Angular Resource</code></a>, or <a href="https://docs.angularjs.org/api/ngResource"><code>ngResource</code></a>.  <code>ngResource</code> is an AngularJS package that wraps <code>$http</code> functionality for RESTful APIs.</p>
+<p>To begin, add <code>ngResource</code> as a dependency for the AngularJS application.  Change the <code>bower.json</code> dependencies to contain <code>angular-resource</code> and add a resolutions section (this eliminates potential Angular version conflicts).</p>
+<div class="highlight"><pre><span></span>...
+  &quot;dependencies&quot;: {
+    &quot;angular&quot;: &quot;^1.5.7&quot;,
+    &quot;angular-ui-router&quot;: &quot;^0.3.1&quot;,
+    &quot;angular-bootstrap&quot;: &quot;^1.3.3&quot;,
+    &quot;angular-resource&quot;: &quot;~1.4.8&quot;
+  },
+  &quot;resolutions&quot;: {
+    &quot;angular&quot;: &quot;^1.5.7&quot;
+  }
+...
+</pre></div>
+
+
+<p>Then run the bower install command in the client directory.</p>
+<div class="highlight"><pre><span></span>drf-sample$ <span class="nb">cd</span> server
+drf-sample/client$ bower install --config.interactive<span class="o">=</span><span class="nb">false</span> --allow-root
+</pre></div>
+
+
+<p><code>angular-resource</code> is installed into the <code>bower_components</code> directory.  Great!  <code>ngResource</code> is installed, but the application is unable to use it until we import it for our application.  </p>
+<p>Add <code>angular-resource.min.js</code> as a dependency in the <code>head</code> section of <code>index.html</code></p>
+<p><em>index.html</em></p>
+<div class="highlight"><pre><span></span>...
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;bower_components/angular-resource/angular-resource.min.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+...
+</pre></div>
+
+
+<p>and import <code>ngResource</code> as a dependency in <code>public/app.js</code>.</p>
+<p><em>public/app.js</em></p>
+<div class="highlight"><pre><span></span><span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
+
+<span class="kd">var</span> <span class="nx">retail</span> <span class="o">=</span> <span class="nx">angular</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;retail&quot;</span><span class="p">,</span> <span class="p">[]);</span>
+
+<span class="nx">angular</span>
+    <span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s1">&#39;SampleApplication&#39;</span><span class="p">,</span> <span class="p">[</span>
+        <span class="s1">&#39;appRoutes&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;retail&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;ngResource&#39;</span>
+    <span class="p">]);</span>
+</pre></div>
+
+
+<p>Start the angular application, navigate a browser to <code>localhost:8081</code>, and check the development console.  </p>
+<div class="highlight"><pre><span></span>drf-sample/client$ node server.js
+Use port <span class="m">8081</span> to connect to this server
+</pre></div>
+
+
+<p>If there are no errors then you're ready to move to the next step!</p>
+<p><a name="services"></a></p>
+<h2>Retail Services</h2>
+<p>According to the <a href="https://docs.angularjs.org/guide/services">AngularJS documentation on services</a>,</p>
+<blockquote>
+<p>Angular services are substitutable objects that are wired together using dependency injection (DI). You can use services to organize and share code across your app.</p>
+<p>Angular services are:</p>
+<p>Lazily instantiated – Angular only instantiates a service when an application component depends on it.</p>
+<p>Singletons – Each component dependent on a service gets a reference to the single instance generated by the service factory.</p>
+</blockquote>
+<p>Long story short, services are individual modules of code that can be imported by other services, controllers, etc. to perform work.  </p>
+<p>We're going to create three AngularJS services with the goal to provide a way to query the Retail API endpoints.  Each service focuses on a specific API endpoint (<code>chains</code>, <code>stores</code>, and <code>employees</code>).</p>
+<p>Start by adding three service files to the services directory</p>
+<div class="highlight"><pre><span></span>components/
+└── retail/
+    ├── controllers/
+    ├── services/
+    │   ├── chain.service.js
+    │   ├── store.service.js
+    │   └── employee.service.js
+    └── templates/
+</pre></div>
+
+
+<p>and add the following to each specified file.</p>
+<p><em>chain.service.js</em></p>
+<div class="highlight"><pre><span></span><span class="nx">retail</span>
+    <span class="p">.</span><span class="nx">factory</span><span class="p">(</span><span class="s1">&#39;Chain&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$resource</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">$resource</span><span class="p">(</span>
+            <span class="s1">&#39;http://localhost:8000/chains/:id/&#39;</span><span class="p">,</span>
+            <span class="p">{},</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;query&#39;</span><span class="o">:</span> <span class="p">{</span>
+                    <span class="nx">method</span><span class="o">:</span> <span class="s1">&#39;GET&#39;</span><span class="p">,</span>
+                    <span class="nx">isArray</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+                    <span class="nx">headers</span><span class="o">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;Content-Type&#39;</span><span class="o">:</span><span class="s1">&#39;application/json&#39;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="nx">stripTrailingSlashes</span><span class="o">:</span> <span class="kc">false</span>
+            <span class="p">}</span>
+        <span class="p">);</span>
+    <span class="p">});</span>
+</pre></div>
+
+
+<p><em>store.service.js</em></p>
+<div class="highlight"><pre><span></span><span class="nx">retail</span>
+    <span class="p">.</span><span class="nx">factory</span><span class="p">(</span><span class="s1">&#39;Store&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$resource</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">$resource</span><span class="p">(</span>
+            <span class="s1">&#39;http://localhost:8000/stores/:id/&#39;</span><span class="p">,</span>
+            <span class="p">{},</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;query&#39;</span><span class="o">:</span> <span class="p">{</span>
+                    <span class="nx">method</span><span class="o">:</span> <span class="s1">&#39;GET&#39;</span><span class="p">,</span>
+                    <span class="nx">isArray</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+                    <span class="nx">headers</span><span class="o">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;Content-Type&#39;</span><span class="o">:</span><span class="s1">&#39;application/json&#39;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="nx">stripTrailingSlashes</span><span class="o">:</span> <span class="kc">false</span>
+            <span class="p">}</span>
+        <span class="p">);</span>
+    <span class="p">});</span>
+</pre></div>
+
+
+<p><em>employee.service.js</em></p>
+<div class="highlight"><pre><span></span><span class="nx">retail</span>
+    <span class="p">.</span><span class="nx">factory</span><span class="p">(</span><span class="s1">&#39;Employee&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$resource</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">$resource</span><span class="p">(</span>
+            <span class="s1">&#39;http://localhost:8000/employees/:id/&#39;</span><span class="p">,</span>
+            <span class="p">{},</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;query&#39;</span><span class="o">:</span> <span class="p">{</span>
+                    <span class="nx">method</span><span class="o">:</span> <span class="s1">&#39;GET&#39;</span><span class="p">,</span>
+                    <span class="nx">isArray</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+                    <span class="nx">headers</span><span class="o">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;Content-Type&#39;</span><span class="o">:</span><span class="s1">&#39;application/json&#39;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="nx">stripTrailingSlashes</span><span class="o">:</span> <span class="kc">false</span>
+            <span class="p">}</span>
+        <span class="p">);</span>
+    <span class="p">});</span>
+</pre></div>
+
+
+<p>Then import each service file into the <code>head</code> section of <code>index.html</code> so they can be used by the application.</p>
+<div class="highlight"><pre><span></span>...
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;public/components/retail/services/chain.service.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;public/components/retail/services/store.service.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;public/components/retail/services/employee.service.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+...
+</pre></div>
+
+
+<p>Our three services have been defined and imported!  What do they do?  First, each service is defined as a <code>factory</code>.  An AngularJS <code>factory</code> typically defines one or more objects and returns those objects for direct use by the calling party.  We are instantiating a <code>$resource</code> object in each of our <code>factory</code> services returning it directly.  Any module that uses the services have access to a pre-configured <code>$resource</code> object.</p>
+<p>Each <code>$resource</code> object is defined with a set of <a href="https://docs.angularjs.org/api/ngResource/service/$resource">configurations</a> explaining how to access the API endpoints.  For each, we are expecting the Django endpoint to live on <code>localhost:8000</code> and to be identified by either <code>/chains/</code>, <code>/stores/</code> or <code>/employees/</code>.  The extra <code>:id</code> parameter denotes that we can specify a resource ID and the ID will be plugged into the URI.</p>
+<p>Next, we specify a <code>query</code> action.  This action allows <code>GET</code> requests to be performed on the specified endpoint, expects an array in return, and ensures that the result is JSON.  </p>
+<p>Lastly, our Django application expects trailing slashes at the end of API requests so we ensure that those trailing slashes are not stripped.  </p>
+<p>Our services are ready to be used by another module.  The first module to make use of these services is the retail controller.</p>
+<p><a name="using-services"></a></p>
+<h2>Making Use of the Retail Services</h2>
+<p>The retail controller in the previous post was a very basic skeleton of what a controller can be.  It is good to keep controllers light and move any heavy lifting to services, but the original controller didn't serve much purpose.  Now that we have services defined we can inject them into the controller to dynamically populate variables based on the results of various API calls.</p>
+<p>Open the retail controller and add the following code to the file.</p>
+<p><em>retail.control.js</em></p>
+<div class="highlight"><pre><span></span><span class="nx">retail</span>
+    <span class="p">.</span><span class="nx">controller</span><span class="p">(</span><span class="s1">&#39;RetailController&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$scope</span><span class="p">,</span> <span class="nx">Chain</span><span class="p">,</span> <span class="nx">Store</span><span class="p">,</span> <span class="nx">Employee</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">Chain</span><span class="p">.</span><span class="nx">query</span><span class="p">().</span><span class="nx">$promise</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">$scope</span><span class="p">.</span><span class="nx">chains</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
+        <span class="p">});</span>
+        <span class="nx">Store</span><span class="p">.</span><span class="nx">query</span><span class="p">().</span><span class="nx">$promise</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">$scope</span><span class="p">.</span><span class="nx">stores</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
+        <span class="p">});</span>
+        <span class="nx">Employee</span><span class="p">.</span><span class="nx">query</span><span class="p">().</span><span class="nx">$promise</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">$scope</span><span class="p">.</span><span class="nx">employees</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
+        <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+
+<p><code>Chain</code>, <code>Store</code> and <code>Employee</code> services are injected into the controller. Each is used by calling the <code>query</code> action when the controller is instantiated.  Using the <a href="http://andyshora.com/promises-angularjs-explained-as-cartoon.html">promises</a> the actions return, we populate <code>$scope</code> variables of like-names with the results.  </p>
+<p>In essence, the controller makes three <code>GET</code> requests to different endpoints on the local retail API and populates variables once the results of each call has returned sucessfully.  </p>
+<p>This is a very simple example of how services can be used, but it's a great start to get API results into our client application!</p>
+<p><a name="template"></a></p>
+<h2>Displaying API Results in the Template</h2>
+<p>The last step to display API results on a page is to modify the template to make use of the new controller variables.  Add the following code to the retail template file.</p>
+<p><strong>retail.template</strong></p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">div</span> <span class="na">ng-controller</span><span class="o">=</span><span class="s">&quot;RetailController&quot;</span><span class="p">&gt;</span>
+  Chains
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">ng-repeat</span><span class="o">=</span><span class="s">&quot;chain in chains&quot;</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">style</span><span class="o">=</span><span class="s">&quot;margin-left: 20px;&quot;</span><span class="p">&gt;</span>
+          name: {{ chain.name }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          description: {{ chain.description }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          slogan: {{ chain.slogan }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          founded_date: {{ chain.founded_date }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          website: {{ chain.website }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          <span class="p">&lt;</span><span class="nt">hr</span><span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+
+  Stores
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">ng-repeat</span><span class="o">=</span><span class="s">&quot;store in stores&quot;</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">style</span><span class="o">=</span><span class="s">&quot;margin-left: 20px;&quot;</span><span class="p">&gt;</span>
+          chain: {{ store.chain }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          number: {{ store.number }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          address: {{ store.address }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          opening_date: {{ store.opening_date }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          business_hours_start: {{ store.business_hours_start }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          business_hours_end: {{ store.business_hours_end }} <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          <span class="p">&lt;</span><span class="nt">hr</span><span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+
+  Employees
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">ng-repeat</span><span class="o">=</span><span class="s">&quot;employee in employees&quot;</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">style</span><span class="o">=</span><span class="s">&quot;margin-left: 20px;&quot;</span><span class="p">&gt;</span>
+          store: {{ employee.store }}  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          number: {{ employee.number }}  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          first_name: {{ employee.first_name }}  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          last_name: {{ employee.last_name }}  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+          hired_date: {{ employee.hired_date }}  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">br</span><span class="p">/&gt;</span>
+<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+</pre></div>
+
+
+<p>This example is a bit more complex than the previous post, so let's go into what's happening here.  At a high level, AngularJS <code>ng-repeat</code> is used to iterate through the lists defined in the controller to display data for each item within the lists.</p>
+<p><a href="https://docs.angularjs.org/api/ng/directive/ngRepeat">ng-repeat</a> is a great AngularJS directive used to loop over collections and generate dynamic content based on each item within the collections.  Think of these as a Python <code>for</code> loop in syntax where the current element of the loop is defined as a subset of a collection.  </p>
+<p>While python uses </p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">itemset</span><span class="p">:</span>
+</pre></div>
+
+
+<p>the AngularJS <code>ng-repeat</code> syntax would be</p>
+<div class="highlight"><pre><span></span><span class="nx">ng</span><span class="o">-</span><span class="nx">repeat</span><span class="o">=</span><span class="s2">&quot;item in itemset&quot;</span>
+</pre></div>
+
+
+<p>In this case, we are looping other three lists - <code>chains</code>, <code>stores</code>, and <code>employees</code>.  These lists were defined within the retail controller from the previous section whereas each contains a list of results from their respective API call.  </p>
+<p>When rendered, each item is be displayed as a separate <code>div</code> element.  Within the repeated <code>div</code>, we use the current item variable (<code>chain</code>, <code>store</code>, and <code>employee</code>) from the <code>ng-repeat</code> to interact with the data.  In this simple example the template displays the noteworthy fields of each object.</p>
+<p>Everything is ready to go to start displaying the data!</p>
+<p><a name="running"></a></p>
+<h2>Running it All Together</h2>
+<p>Let's get the total application up and running!  Keep in mind that the intent of this guide is to run the Django application and the AngularJS application as two separate services.  To run everything together we need to run two different commands to start both sides:</p>
+<p><strong>Start Django application</strong></p>
+<div class="highlight"><pre><span></span>tim@tim-XPS-13-9343:~/code/side/drf-sample/server$ python manage.py runserver
+Performing system checks...
+
+System check identified no issues <span class="o">(</span><span class="m">0</span> silenced<span class="o">)</span>.
+January 02, <span class="m">2017</span> - 18:52:56
+Django version 1.8, using settings <span class="s1">&#39;config.settings&#39;</span>
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+</pre></div>
+
+
+<p><strong>Start AngularJS spplication</strong></p>
+<div class="highlight"><pre><span></span>tim@tim-XPS-13-9343:~/code/side/drf-sample/client$ node server.js 
+Use port <span class="m">8081</span> to connect to this server
+</pre></div>
+
+
+<p>Great!  Both applications are up and running.  Open a browser and head to <code>localhost:8081</code>.  Assuming you haven't cleared the Django database from <a href="/blog/getting-started-drf-angularjs-part-2/">Part 2</a> you should see some data populated on the page!  If you did clear the database then you will have to populate your models through the ORM.  </p>
+<p>Here's what the rendered page looks like!</p>
+<p><center><img alt="map3" src="/images/drf-rendered.png" /></center></p>
+<h2>Looking Forward</h2>
+<p>This will be the last part of the Django/Angular application for now!  The ultimate goal here was to get two separate applications up and running with Django/DRF as the backend and AngularJS running the frontend and we have accomplished that goal!</p>
+<p>There will be various, smaller posts in the future about how to improve Django and AngularJS applications in a number of ways.  Look out for those posts coming soon!</p>
+
+<p class="blog-post-meta footer-meta"><strong>Tags:</strong> <a href="/tag/django/">django</a>, <a href="/tag/django-rest-framework/">django rest framework</a>, <a href="/tag/angularjs/">angularjs</a></p>
+    <div class="addthis_sharing_toolbox"></div>
+  </div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-3">
+        <span class="side-image well-image tim-butler-avatar col-sm-3"></span>
+      </div>
+      <div class="col-md-9">
+        <h3>Tim Butler</h3>
+<p class="well-content">I'm a Software Maven at <a href="http://trackmaven.com/">TrackMaven</a>.</p>
+<p class="well-content">I specialize in Python backend development through Django and Django Rest Framework. Want to get in touch? Feel free to drop me an <a href="mailto:tim.butler@trackmaven.com">email</a>.</p>      </div>
+    </div>
+  </div>
+    <h3>Comments</h3>
+    <div id="disqus_thread"></div>
+</div><!-- /.blog-post -->
+        </div>
+      </div>
+    </div>
+    <div class="blog-footer">
+      <p>&copy; <script>document.write(new Date().getFullYear())</script><noscript>2015</noscript> - TrackMaven, Inc &bull; <a href="/feeds/rss.xml">RSS</a></p>
+    </div>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-54925402-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script type="text/javascript">
+var disqus_shortname = 'tmengineroom';
+(function() {
+  // Comments
+  var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+
+  // Comment Count
+  var s = document.createElement('script'); s.async = true;
+  s.type = 'text/javascript';
+  s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+  </body>
+</html>

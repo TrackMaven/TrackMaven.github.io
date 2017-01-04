@@ -1,5 +1,305 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0"><channel><title>The Engine Room - TrackMaven</title><link>http://engineroom.trackmaven.com/</link><description></description><lastBuildDate>Tue, 29 Nov 2016 00:00:00 +0100</lastBuildDate><item><title>Getting Started with Django REST Framework (DRF) and AngularJS (Part 4)</title><link>http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-4/</link><description>&lt;p&gt;This is the fourth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.&lt;/p&gt;
+<rss version="2.0"><channel><title>The Engine Room - TrackMaven</title><link>http://engineroom.trackmaven.com/</link><description></description><lastBuildDate>Wed, 04 Jan 2017 00:00:00 +0100</lastBuildDate><item><title>Getting Started with Django REST Framework (DRF) and AngularJS (Part 5)</title><link>http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-5/</link><description>&lt;p&gt;This is the fifth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Read Previous Posts:&lt;/strong&gt; &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-1/"&gt;Part 1 - Initial Project Setup&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-2/"&gt;Part 2 - Django Models and the ORM&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-3/"&gt;Part 3 - Serializers, views, and API routes&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-4/"&gt;Part 4 - Client Project Setup&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Write:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://github.com/TrackMaven/getting-started-with-drf-angular/tree/part-5"&gt;Part 5 Supplementary Code&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr /&gt;
+&lt;p&gt;This post focuses on connecting our AngularJS application with the existing Django Retail application backend.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#introduction"&gt;A Recap and Introduction to AngularJS Services&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#resource"&gt;Angular Resource&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#services"&gt;Retail Services&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#using-services"&gt;Making Use of the Retail Services&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#template"&gt;Displaying API Results in the Template&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#running"&gt;Running it All Together&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This post uses &lt;a href="https://github.com/angular/angular.js"&gt;AngularJS&lt;/a&gt; &lt;code&gt;1.5.7&lt;/code&gt; and &lt;a href="https://docs.angularjs.org/api/ngResource"&gt;Angular Resource&lt;/a&gt; &lt;code&gt;1.4.8&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a name="introduction"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;A Recap and Introduction to AngularJS Services&lt;/h2&gt;
+&lt;p&gt;In the previous post, we got our Angular application up and running in a very minimal way.  As minimal as it was, the framework put into place allows us to build on top of it to begin integrating data from the backend &lt;em&gt;Retail&lt;/em&gt; application previously created.  This post covers the basics on AngularJS services - injectable Angular modules that can be shared across your application to perform common functions.&lt;/p&gt;
+&lt;p&gt;By the end of this post we will define multiple services that contact the Retail API and display the results of the query onto our main page.&lt;/p&gt;
+&lt;p&gt;&lt;a name="resource"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Angular Resource (ngResource)&lt;/h2&gt;
+&lt;p&gt;There are many ways to contact an API through Angular.  We could use &lt;a href="https://docs.angularjs.org/api/ng/service/$http"&gt;&lt;code&gt;$http&lt;/code&gt;&lt;/a&gt;, but it's a bit raw and is used for general purpose requests.  For this application we use &lt;a href="https://docs.angularjs.org/api/ngResource"&gt;&lt;code&gt;Angular Resource&lt;/code&gt;&lt;/a&gt;, or &lt;a href="https://docs.angularjs.org/api/ngResource"&gt;&lt;code&gt;ngResource&lt;/code&gt;&lt;/a&gt;.  &lt;code&gt;ngResource&lt;/code&gt; is an AngularJS package that wraps &lt;code&gt;$http&lt;/code&gt; functionality for RESTful APIs.&lt;/p&gt;
+&lt;p&gt;To begin, add &lt;code&gt;ngResource&lt;/code&gt; as a dependency for the AngularJS application.  Change the &lt;code&gt;bower.json&lt;/code&gt; dependencies to contain &lt;code&gt;angular-resource&lt;/code&gt; and add a resolutions section (this eliminates potential Angular version conflicts).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;...
+  &amp;quot;dependencies&amp;quot;: {
+    &amp;quot;angular&amp;quot;: &amp;quot;^1.5.7&amp;quot;,
+    &amp;quot;angular-ui-router&amp;quot;: &amp;quot;^0.3.1&amp;quot;,
+    &amp;quot;angular-bootstrap&amp;quot;: &amp;quot;^1.3.3&amp;quot;,
+    &amp;quot;angular-resource&amp;quot;: &amp;quot;~1.4.8&amp;quot;
+  },
+  &amp;quot;resolutions&amp;quot;: {
+    &amp;quot;angular&amp;quot;: &amp;quot;^1.5.7&amp;quot;
+  }
+...
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then run the bower install command in the client directory.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf-sample$ &lt;span class="nb"&gt;cd&lt;/span&gt; server
+drf-sample/client$ bower install --config.interactive&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;false&lt;/span&gt; --allow-root
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;angular-resource&lt;/code&gt; is installed into the &lt;code&gt;bower_components&lt;/code&gt; directory.  Great!  &lt;code&gt;ngResource&lt;/code&gt; is installed, but the application is unable to use it until we import it for our application.  &lt;/p&gt;
+&lt;p&gt;Add &lt;code&gt;angular-resource.min.js&lt;/code&gt; as a dependency in the &lt;code&gt;head&lt;/code&gt; section of &lt;code&gt;index.html&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;index.html&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;...
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;bower_components/angular-resource/angular-resource.min.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+...
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and import &lt;code&gt;ngResource&lt;/code&gt; as a dependency in &lt;code&gt;public/app.js&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;public/app.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;use strict&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="kd"&gt;var&lt;/span&gt; &lt;span class="nx"&gt;retail&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;angular&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;module&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;retail&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[]);&lt;/span&gt;
+
+&lt;span class="nx"&gt;angular&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;module&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;SampleApplication&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s1"&gt;&amp;#39;appRoutes&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s1"&gt;&amp;#39;retail&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s1"&gt;&amp;#39;ngResource&amp;#39;&lt;/span&gt;
+    &lt;span class="p"&gt;]);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Start the angular application, navigate a browser to &lt;code&gt;localhost:8081&lt;/code&gt;, and check the development console.  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;drf-sample/client$ node server.js
+Use port &lt;span class="m"&gt;8081&lt;/span&gt; to connect to this server
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If there are no errors then you're ready to move to the next step!&lt;/p&gt;
+&lt;p&gt;&lt;a name="services"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Retail Services&lt;/h2&gt;
+&lt;p&gt;According to the &lt;a href="https://docs.angularjs.org/guide/services"&gt;AngularJS documentation on services&lt;/a&gt;,&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Angular services are substitutable objects that are wired together using dependency injection (DI). You can use services to organize and share code across your app.&lt;/p&gt;
+&lt;p&gt;Angular services are:&lt;/p&gt;
+&lt;p&gt;Lazily instantiated – Angular only instantiates a service when an application component depends on it.&lt;/p&gt;
+&lt;p&gt;Singletons – Each component dependent on a service gets a reference to the single instance generated by the service factory.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Long story short, services are individual modules of code that can be imported by other services, controllers, etc. to perform work.  &lt;/p&gt;
+&lt;p&gt;We're going to create three AngularJS services with the goal to provide a way to query the Retail API endpoints.  Each service focuses on a specific API endpoint (&lt;code&gt;chains&lt;/code&gt;, &lt;code&gt;stores&lt;/code&gt;, and &lt;code&gt;employees&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;Start by adding three service files to the services directory&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;components/
+└── retail/
+    ├── controllers/
+    ├── services/
+    │   ├── chain.service.js
+    │   ├── store.service.js
+    │   └── employee.service.js
+    └── templates/
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and add the following to each specified file.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;chain.service.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;retail&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;factory&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Chain&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;$resource&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nx"&gt;$resource&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s1"&gt;&amp;#39;http://localhost:8000/chains/:id/&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="p"&gt;{},&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="s1"&gt;&amp;#39;query&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                    &lt;span class="nx"&gt;method&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;GET&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="nx"&gt;isArray&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="nx"&gt;headers&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                        &lt;span class="s1"&gt;&amp;#39;Content-Type&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;application/json&amp;#39;&lt;/span&gt;
+                    &lt;span class="p"&gt;}&lt;/span&gt;
+                &lt;span class="p"&gt;}&lt;/span&gt;
+            &lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="nx"&gt;stripTrailingSlashes&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;
+            &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;});&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;store.service.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;retail&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;factory&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Store&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;$resource&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nx"&gt;$resource&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s1"&gt;&amp;#39;http://localhost:8000/stores/:id/&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="p"&gt;{},&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="s1"&gt;&amp;#39;query&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                    &lt;span class="nx"&gt;method&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;GET&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="nx"&gt;isArray&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="nx"&gt;headers&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                        &lt;span class="s1"&gt;&amp;#39;Content-Type&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;application/json&amp;#39;&lt;/span&gt;
+                    &lt;span class="p"&gt;}&lt;/span&gt;
+                &lt;span class="p"&gt;}&lt;/span&gt;
+            &lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="nx"&gt;stripTrailingSlashes&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;
+            &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;});&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;employee.service.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;retail&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;factory&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Employee&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;$resource&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nx"&gt;$resource&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s1"&gt;&amp;#39;http://localhost:8000/employees/:id/&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="p"&gt;{},&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="s1"&gt;&amp;#39;query&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                    &lt;span class="nx"&gt;method&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;GET&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="nx"&gt;isArray&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                    &lt;span class="nx"&gt;headers&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+                        &lt;span class="s1"&gt;&amp;#39;Content-Type&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;application/json&amp;#39;&lt;/span&gt;
+                    &lt;span class="p"&gt;}&lt;/span&gt;
+                &lt;span class="p"&gt;}&lt;/span&gt;
+            &lt;span class="p"&gt;},&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;
+                &lt;span class="nx"&gt;stripTrailingSlashes&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="kc"&gt;false&lt;/span&gt;
+            &lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="p"&gt;});&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then import each service file into the &lt;code&gt;head&lt;/code&gt; section of &lt;code&gt;index.html&lt;/code&gt; so they can be used by the application.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;...
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;public/components/retail/services/chain.service.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;public/components/retail/services/store.service.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt; &lt;span class="na"&gt;src&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;public/components/retail/services/employee.service.js&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+...
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Our three services have been defined and imported!  What do they do?  First, each service is defined as a &lt;code&gt;factory&lt;/code&gt;.  An AngularJS &lt;code&gt;factory&lt;/code&gt; typically defines one or more objects and returns those objects for direct use by the calling party.  We are instantiating a &lt;code&gt;$resource&lt;/code&gt; object in each of our &lt;code&gt;factory&lt;/code&gt; services returning it directly.  Any module that uses the services have access to a pre-configured &lt;code&gt;$resource&lt;/code&gt; object.&lt;/p&gt;
+&lt;p&gt;Each &lt;code&gt;$resource&lt;/code&gt; object is defined with a set of &lt;a href="https://docs.angularjs.org/api/ngResource/service/$resource"&gt;configurations&lt;/a&gt; explaining how to access the API endpoints.  For each, we are expecting the Django endpoint to live on &lt;code&gt;localhost:8000&lt;/code&gt; and to be identified by either &lt;code&gt;/chains/&lt;/code&gt;, &lt;code&gt;/stores/&lt;/code&gt; or &lt;code&gt;/employees/&lt;/code&gt;.  The extra &lt;code&gt;:id&lt;/code&gt; parameter denotes that we can specify a resource ID and the ID will be plugged into the URI.&lt;/p&gt;
+&lt;p&gt;Next, we specify a &lt;code&gt;query&lt;/code&gt; action.  This action allows &lt;code&gt;GET&lt;/code&gt; requests to be performed on the specified endpoint, expects an array in return, and ensures that the result is JSON.  &lt;/p&gt;
+&lt;p&gt;Lastly, our Django application expects trailing slashes at the end of API requests so we ensure that those trailing slashes are not stripped.  &lt;/p&gt;
+&lt;p&gt;Our services are ready to be used by another module.  The first module to make use of these services is the retail controller.&lt;/p&gt;
+&lt;p&gt;&lt;a name="using-services"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Making Use of the Retail Services&lt;/h2&gt;
+&lt;p&gt;The retail controller in the previous post was a very basic skeleton of what a controller can be.  It is good to keep controllers light and move any heavy lifting to services, but the original controller didn't serve much purpose.  Now that we have services defined we can inject them into the controller to dynamically populate variables based on the results of various API calls.&lt;/p&gt;
+&lt;p&gt;Open the retail controller and add the following code to the file.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;retail.control.js&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;retail&lt;/span&gt;
+    &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;controller&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;RetailController&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;Store&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nx"&gt;Employee&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nx"&gt;Chain&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;query&lt;/span&gt;&lt;span class="p"&gt;().&lt;/span&gt;&lt;span class="nx"&gt;$promise&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;chains&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+        &lt;span class="p"&gt;});&lt;/span&gt;
+        &lt;span class="nx"&gt;Store&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;query&lt;/span&gt;&lt;span class="p"&gt;().&lt;/span&gt;&lt;span class="nx"&gt;$promise&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;stores&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+        &lt;span class="p"&gt;});&lt;/span&gt;
+        &lt;span class="nx"&gt;Employee&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;query&lt;/span&gt;&lt;span class="p"&gt;().&lt;/span&gt;&lt;span class="nx"&gt;$promise&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;then&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kd"&gt;function&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+            &lt;span class="nx"&gt;$scope&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;employees&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;data&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+        &lt;span class="p"&gt;});&lt;/span&gt;
+&lt;span class="p"&gt;});&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;code&gt;Chain&lt;/code&gt;, &lt;code&gt;Store&lt;/code&gt; and &lt;code&gt;Employee&lt;/code&gt; services are injected into the controller. Each is used by calling the &lt;code&gt;query&lt;/code&gt; action when the controller is instantiated.  Using the &lt;a href="http://andyshora.com/promises-angularjs-explained-as-cartoon.html"&gt;promises&lt;/a&gt; the actions return, we populate &lt;code&gt;$scope&lt;/code&gt; variables of like-names with the results.  &lt;/p&gt;
+&lt;p&gt;In essence, the controller makes three &lt;code&gt;GET&lt;/code&gt; requests to different endpoints on the local retail API and populates variables once the results of each call has returned sucessfully.  &lt;/p&gt;
+&lt;p&gt;This is a very simple example of how services can be used, but it's a great start to get API results into our client application!&lt;/p&gt;
+&lt;p&gt;&lt;a name="template"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Displaying API Results in the Template&lt;/h2&gt;
+&lt;p&gt;The last step to display API results on a page is to modify the template to make use of the new controller variables.  Add the following code to the retail template file.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;retail.template&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;ng-controller&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;RetailController&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  Chains
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;ng-repeat&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;chain in chains&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;style&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;margin-left: 20px;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+          name: {{ chain.name }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          description: {{ chain.description }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          slogan: {{ chain.slogan }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          founded_date: {{ chain.founded_date }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          website: {{ chain.website }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;hr&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+      &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+
+  Stores
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;ng-repeat&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;store in stores&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;style&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;margin-left: 20px;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+          chain: {{ store.chain }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          number: {{ store.number }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          address: {{ store.address }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          opening_date: {{ store.opening_date }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          business_hours_start: {{ store.business_hours_start }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          business_hours_end: {{ store.business_hours_end }} &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;hr&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+      &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+
+  Employees
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;ng-repeat&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;employee in employees&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+      &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;style&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;margin-left: 20px;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+          store: {{ employee.store }}  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          number: {{ employee.number }}  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          first_name: {{ employee.first_name }}  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          last_name: {{ employee.last_name }}  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+          hired_date: {{ employee.hired_date }}  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+      &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This example is a bit more complex than the previous post, so let's go into what's happening here.  At a high level, AngularJS &lt;code&gt;ng-repeat&lt;/code&gt; is used to iterate through the lists defined in the controller to display data for each item within the lists.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://docs.angularjs.org/api/ng/directive/ngRepeat"&gt;ng-repeat&lt;/a&gt; is a great AngularJS directive used to loop over collections and generate dynamic content based on each item within the collections.  Think of these as a Python &lt;code&gt;for&lt;/code&gt; loop in syntax where the current element of the loop is defined as a subset of a collection.  &lt;/p&gt;
+&lt;p&gt;While python uses &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;itemset&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;the AngularJS &lt;code&gt;ng-repeat&lt;/code&gt; syntax would be&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nx"&gt;ng&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nx"&gt;repeat&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;item in itemset&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In this case, we are looping other three lists - &lt;code&gt;chains&lt;/code&gt;, &lt;code&gt;stores&lt;/code&gt;, and &lt;code&gt;employees&lt;/code&gt;.  These lists were defined within the retail controller from the previous section whereas each contains a list of results from their respective API call.  &lt;/p&gt;
+&lt;p&gt;When rendered, each item is be displayed as a separate &lt;code&gt;div&lt;/code&gt; element.  Within the repeated &lt;code&gt;div&lt;/code&gt;, we use the current item variable (&lt;code&gt;chain&lt;/code&gt;, &lt;code&gt;store&lt;/code&gt;, and &lt;code&gt;employee&lt;/code&gt;) from the &lt;code&gt;ng-repeat&lt;/code&gt; to interact with the data.  In this simple example the template displays the noteworthy fields of each object.&lt;/p&gt;
+&lt;p&gt;Everything is ready to go to start displaying the data!&lt;/p&gt;
+&lt;p&gt;&lt;a name="running"&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Running it All Together&lt;/h2&gt;
+&lt;p&gt;Let's get the total application up and running!  Keep in mind that the intent of this guide is to run the Django application and the AngularJS application as two separate services.  To run everything together we need to run two different commands to start both sides:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Start Django application&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;tim@tim-XPS-13-9343:~/code/side/drf-sample/server$ python manage.py runserver
+Performing system checks...
+
+System check identified no issues &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt; silenced&lt;span class="o"&gt;)&lt;/span&gt;.
+January 02, &lt;span class="m"&gt;2017&lt;/span&gt; - 18:52:56
+Django version 1.8, using settings &lt;span class="s1"&gt;&amp;#39;config.settings&amp;#39;&lt;/span&gt;
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CONTROL-C.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;strong&gt;Start AngularJS spplication&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;tim@tim-XPS-13-9343:~/code/side/drf-sample/client$ node server.js 
+Use port &lt;span class="m"&gt;8081&lt;/span&gt; to connect to this server
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Great!  Both applications are up and running.  Open a browser and head to &lt;code&gt;localhost:8081&lt;/code&gt;.  Assuming you haven't cleared the Django database from &lt;a href="/blog/getting-started-drf-angularjs-part-2/"&gt;Part 2&lt;/a&gt; you should see some data populated on the page!  If you did clear the database then you will have to populate your models through the ORM.  &lt;/p&gt;
+&lt;p&gt;Here's what the rendered page looks like!&lt;/p&gt;
+&lt;p&gt;&lt;center&gt;&lt;img alt="map3" src="/images/drf-rendered.png" /&gt;&lt;/center&gt;&lt;/p&gt;
+&lt;h2&gt;Looking Forward&lt;/h2&gt;
+&lt;p&gt;This will be the last part of the Django/Angular application for now!  The ultimate goal here was to get two separate applications up and running with Django/DRF as the backend and AngularJS running the frontend and we have accomplished that goal!&lt;/p&gt;
+&lt;p&gt;There will be various, smaller posts in the future about how to improve Django and AngularJS applications in a number of ways.  Look out for those posts coming soon!&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Tim Butler</dc:creator><pubDate>Wed, 04 Jan 2017 00:00:00 +0100</pubDate><guid isPermaLink="false">tag:engineroom.trackmaven.com,2017-01-04:blog/getting-started-drf-angularjs-part-5/</guid><category>django</category><category>django rest framework</category><category>angularjs</category></item><item><title>Getting Started with Django REST Framework (DRF) and AngularJS (Part 4)</title><link>http://engineroom.trackmaven.com/blog/getting-started-drf-angularjs-part-4/</link><description>&lt;p&gt;This is the fourth installment in a multi-part series geared toward getting started with Django Rest Framework (DRF) and AngularJS.  The goal of this series is to create an extensive, RESTful web application that uses DRF as a backend DB/API service and AngularJS as a frontend service connecting to the API.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Read Previous Posts:&lt;/strong&gt; &lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href="/blog/getting-started-drf-angularjs-part-1/"&gt;Part 1 - Initial Project Setup&lt;/a&gt;&lt;/li&gt;
@@ -58,22 +358,22 @@
   &lt;span class="nt"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;drf-sample-client&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
   &lt;span class="nt"&gt;&amp;quot;description&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;A sample Angular application&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
   &lt;span class="nt"&gt;&amp;quot;dependencies&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-    &lt;span class="nt"&gt;&amp;quot;express&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;^4.13.4&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="nt"&gt;&amp;quot;bower&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;1.7.9&amp;quot;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;quot;express&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;^4.13.4&amp;quot;&lt;/span&gt;
   &lt;span class="p"&gt;}&lt;/span&gt;
 &lt;span class="p"&gt;}&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;&lt;em&gt;Note:&lt;/em&gt; There are a number of fields possible in &lt;code&gt;package.json&lt;/code&gt; left out of this example.  The &lt;a href="https://docs.npmjs.com/files/package.json"&gt;package.json documentation&lt;/a&gt; does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download &lt;code&gt;express&lt;/code&gt; and &lt;code&gt;bower&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Note:&lt;/em&gt; There are a number of fields possible in &lt;code&gt;package.json&lt;/code&gt; left out of this example.  The &lt;a href="https://docs.npmjs.com/files/package.json"&gt;package.json documentation&lt;/a&gt; does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download &lt;code&gt;express&lt;/code&gt;.&lt;/p&gt;
 &lt;hr /&gt;
 &lt;p&gt;Since we already have &lt;code&gt;npm&lt;/code&gt; installed, we can install all of our project dependencies.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;client$ &lt;span class="nb"&gt;cd&lt;/span&gt; client/
 drf-sample/client$ npm install
+drf-sample/client$ npm install -g bower
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;&lt;code&gt;node_modules&lt;/code&gt; is created within the client directory and contains the contents of both installed packages.  Now that we have &lt;a href="https://bower.io/"&gt;bower&lt;/a&gt; downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in &lt;code&gt;bower.json&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;node_modules&lt;/code&gt; is created within the client directory and contains the contents of the installed &lt;code&gt;express&lt;/code&gt; package.  Now that we have &lt;a href="https://bower.io/"&gt;bower&lt;/a&gt; downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in &lt;code&gt;bower.json&lt;/code&gt;.&lt;/p&gt;
 &lt;hr /&gt;
 &lt;p&gt;&lt;em&gt;bower.json&lt;/em&gt;&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;

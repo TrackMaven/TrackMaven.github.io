@@ -110,22 +110,22 @@ Getting Started with Django REST Framework (DRF) and AngularJS (Part 4) - The En
   <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;drf-sample-client&quot;</span><span class="p">,</span>
   <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A sample Angular application&quot;</span><span class="p">,</span>
   <span class="nt">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;express&quot;</span><span class="p">:</span> <span class="s2">&quot;^4.13.4&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;bower&quot;</span><span class="p">:</span> <span class="s2">&quot;1.7.9&quot;</span>
+    <span class="nt">&quot;express&quot;</span><span class="p">:</span> <span class="s2">&quot;^4.13.4&quot;</span>
   <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 
 
-<p><em>Note:</em> There are a number of fields possible in <code>package.json</code> left out of this example.  The <a href="https://docs.npmjs.com/files/package.json">package.json documentation</a> does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download <code>express</code> and <code>bower</code>.</p>
+<p><em>Note:</em> There are a number of fields possible in <code>package.json</code> left out of this example.  The <a href="https://docs.npmjs.com/files/package.json">package.json documentation</a> does a great job at explaining what can be defined here.  For the purpose of this guide, the important takeaway is the dependencies section stating that we want to download <code>express</code>.</p>
 <hr />
 <p>Since we already have <code>npm</code> installed, we can install all of our project dependencies.</p>
 <div class="highlight"><pre><span></span>client$ <span class="nb">cd</span> client/
 drf-sample/client$ npm install
+drf-sample/client$ npm install -g bower
 </pre></div>
 
 
-<p><code>node_modules</code> is created within the client directory and contains the contents of both installed packages.  Now that we have <a href="https://bower.io/">bower</a> downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in <code>bower.json</code>.</p>
+<p><code>node_modules</code> is created within the client directory and contains the contents of the installed <code>express</code> package.  Now that we have <a href="https://bower.io/">bower</a> downloaded, we can use it to install the angular dependencies.  First, define the angular dependencies in <code>bower.json</code>.</p>
 <hr />
 <p><em>bower.json</em></p>
 <div class="highlight"><pre><span></span><span class="p">{</span>
